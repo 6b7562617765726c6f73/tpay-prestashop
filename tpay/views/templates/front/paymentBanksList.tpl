@@ -50,6 +50,7 @@
             display: inline-block;
         }
     </style>
+{include file="$tplDir/orderSummary.tpl"}
 {include file="$tplDir/blik.tpl" paymentConfig=$paymentConfig}
 <br/>
 <div class="insidebg" id="insidebg">

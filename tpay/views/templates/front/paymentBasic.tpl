@@ -19,7 +19,10 @@
         {l s='If you are redirected to the payment tpay.com does not happen automatically, press the button below.' mod='tpay'}
     </div><br>
 {/if}
-
+{capture name=path}
+    <a href="{$link->getPageLink('order', true, NULL, "step=3")|escape:'html':'UTF-8'}" title="{l s='Other payment methods' mod='tpay'}">
+        {l s='Checkout' mod='tpay'}</a><span class="navigation-pipe">{$navigationPipe}</span>{l s='Check payment' mod='tpay'}
+{/capture}
 
 <div id="tpay-form">
     <form id="tpay-payment" class="tpay-form" action="https://secure.tpay.com" method="POST">
@@ -38,7 +41,7 @@
     </form>
     <p class="cart_navigation clearfix" id="cart_navigation">
         <a class="button-exclusive btn btn-default" href="{$link->getPageLink('order', true)|escape:'htmlall':'UTF-8'}">
-            <i class="icon-chevron-left"></i>{l s='Inne metody płatności' mod='tpay'}
+            <i class="icon-chevron-left"></i>{l s='Other payment methods' mod='tpay'}
         </a>
     </p>
 </div>
