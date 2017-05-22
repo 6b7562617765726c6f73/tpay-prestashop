@@ -14,30 +14,26 @@
 {if $autoSubmit}
     <div>
         {l s='Thank you for your order, in a moment you will be redirected to the page tpay' mod='tpay'}
-    </div><br>
+    </div>
+    <br>
     <div>
         {l s='If you are redirected to the payment tpay.com does not happen automatically, press the button below.' mod='tpay'}
-    </div><br>
+    </div>
+    <br>
 {/if}
 {capture name=path}
-    <a href="{$link->getPageLink('order', true, NULL, "step=3")|escape:'html':'UTF-8'}" title="{l s='Other payment methods' mod='tpay'}">
-        {l s='Checkout' mod='tpay'}</a><span class="navigation-pipe">{$navigationPipe}</span>{l s='Check payment' mod='tpay'}
+    <a href="{$link->getPageLink('order', true, NULL, "step=3")|escape:'html':'UTF-8'}"
+       title="{l s='Other payment methods' mod='tpay'}">
+        {l s='Checkout' mod='tpay'}</a>
+    <span class="navigation-pipe">{$navigationPipe}</span>{l s='Check payment' mod='tpay'}
 {/capture}
 
 <div id="tpay-form">
-    <form id="tpay-payment" class="tpay-form" action="https://secure.tpay.com" method="POST">
-        {foreach from=$paymentConfig key=name item=value}
-            {if $name eq 'kanal'}
-                {assign 'id' 'tpay-channel-input'}
-            {elseif $name eq 'akceptuje_regulamin'}
-                {assign 'id' 'tpay-regulations-input'}
-            {else}
-                {assign 'id' ''}
-            {/if}
-            <input type="hidden" value="{$value|escape:'htmlall':'UTF-8'}" name="{$name|escape:'htmlall':'UTF-8'}" {if $id}id="{$id|escape:'htmlall':'UTF-8'}"{/if}>
-        {/foreach}
-        <br/>
-         <input id="tpay-payment-submit" type="submit" value="{l s='Pay' mod='tpay'}">
+    <form id="tpay-payment" class="tpay-form"
+          action="{$link->getModuleLink('tpay', 'payment', [], true)|escape:'htmlall':'UTF-8'}" method="POST">
+        <input id="tpay-channel-input" type="hidden" name="channel" {if $installments}value="49" {/if}>
+        <input id="tpay-payment-submit" type="submit" value="{l s='Pay' mod='tpay'}">
+        <input id="tpay-regulations-input" type="hidden" value="0" name="regulations">
     </form>
     <p class="cart_navigation clearfix" id="cart_navigation">
         <a class="button-exclusive btn btn-default" href="{$link->getPageLink('order', true)|escape:'htmlall':'UTF-8'}">
@@ -47,15 +43,52 @@
 </div>
 <script>
     {literal}
-    (function(){"use strict";var c=[],f={},a,e,d,b;if(!window.jQuery){a=function(g){c.push(g)};f.ready=function(g){a(g)};e=window.jQuery=window.$=function(g){if(typeof g=="function"){a(g)}return f};window.checkJQ=function(){if(!d()){b=setTimeout(checkJQ,100)}};b=setTimeout(checkJQ,100);d=function(){if(window.jQuery!==e){clearTimeout(b);var g=c.shift();while(g){jQuery(g);g=c.shift()}b=f=a=e=d=window.checkJQ=null;return true}return false}}})();
+    (function () {
+        "use strict";
+        var c = [], f = {}, a, e, d, b;
+        if (!window.jQuery) {
+            a = function (g) {
+                c.push(g)
+            };
+            f.ready = function (g) {
+                a(g)
+            };
+            e = window.jQuery = window.$ = function (g) {
+                if (typeof g == "function") {
+                    a(g)
+                }
+                return f
+            };
+            window.checkJQ = function () {
+                if (!d()) {
+                    b = setTimeout(checkJQ, 100)
+                }
+            };
+            b = setTimeout(checkJQ, 100);
+            d = function () {
+                if (window.jQuery !== e) {
+                    clearTimeout(b);
+                    var g = c.shift();
+                    while (g) {
+                        jQuery(g);
+                        g = c.shift()
+                    }
+                    b = f = a = e = d = window.checkJQ = null;
+                    return true
+                }
+                return false
+            }
+        }
+    })();
 
-    {/literal}{if $autoSubmit}{literal}
-        jQuery(document).ready(function() {
-            setTimeout(function() {
-                jQuery('#tpay-form').find('input[type=submit]').click();
-            }, 3000);
-            jQuery('#tpay-form').find('input[type=submit]').val("{/literal}{l s='Pay' mod='tpay'}{literal}");
-        });
+    {/literal}
+    {if $autoSubmit}{literal}
+    jQuery(document).ready(function () {
+        setTimeout(function () {
+            jQuery('#tpay-form').find('input[type=submit]').click();
+        }, 3000);
+        jQuery('#tpay-form').find('input[type=submit]').val("{/literal}{l s='Pay' mod='tpay'}{literal}");
+    });
 
     {/literal}{/if}
 </script>

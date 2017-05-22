@@ -60,7 +60,13 @@
     </div>
 
     <div id="bank-selection-form" style="display: inline-block;"></div>
-
+    {if $showRegulations}
+        <input id="tpay-accept-regulations-checkbox" type="checkbox" value="0">
+        <label for="tpay-accept-regulations-checkbox">
+            {l s='I do accept' mod='tpay'} <a href="{$paymentConfig.regulation_url|escape:'htmlall':'UTF-8'}" target="_blank">{l s='regulations' mod='tpay'}</a>
+        </label>
+    {/if}
+    {include file="$tplDir/paymentBasic.tpl" paymentConfig=$paymentConfig}
 {literal}
     <script>
         var s = document.createElement('script'),
@@ -126,16 +132,11 @@
     </script>
 {/literal}
 
-    {if $showRegulations}
-        <input id="tpay-accept-regulations-checkbox" type="checkbox" value="0">
-        <label for="tpay-accept-regulations-checkbox">
-            {l s='I do accept' mod='tpay'} <a href="{$paymentConfig.regulation_url|escape:'htmlall':'UTF-8'}" target="_blank">{l s='regulations' mod='tpay'}</a>
-        </label>
-    {/if}
+
     <script>
         $(document).ready(function () {
             $('#tpay-form').find('input[type=submit]').val("{l s='Pay' mod='tpay'}").addClass('tpay');
         })
     </script>
-    {include file="$tplDir/paymentBasic.tpl" paymentConfig=$paymentConfig}
+
 </div>

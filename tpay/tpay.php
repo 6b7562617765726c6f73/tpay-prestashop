@@ -36,7 +36,8 @@ define('TPAY_CARD_CURRENCIES', serialize(array(
     'GBP' => '826',
     'USD' => '840',
     'EUR' => '978',
-    'CZK' => '203',)));
+    'CZK' => '203',
+)));
 
 /**
  * Class Tpay main class.
@@ -50,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.2.1';
+        $this->version = '1.2.2';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -832,19 +833,13 @@ class Tpay extends PaymentModule
         $basicActive = (int)Configuration::get('TPAY_BASIC_ACTIVE');
         $installmentsActive = (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
         if ($basicActive === 1) {
-            if ((int)Configuration::get('TPAY_BANK_ON_SHOP') === 1) {
-                $paymentLink = $this->context->link->getModuleLink(
-                    'tpay',
-                    'validation',
-                    array('type' => TPAY_PAYMENT_BASIC)
-                );
-            } else {
-                $paymentLink = $this->context->link->getModuleLink(
-                    'tpay',
-                    'payment',
-                    array('type' => TPAY_PAYMENT_BASIC)
-                );
-            }
+
+            $paymentLink = $this->context->link->getModuleLink(
+                'tpay',
+                'validation',
+                array('type' => TPAY_PAYMENT_BASIC)
+            );
+
 
             $availablePayments[] = array(
                 'type'        => TPAY_PAYMENT_BASIC,
@@ -862,7 +857,7 @@ class Tpay extends PaymentModule
             if ($installmentsActive === 1 && $orderTotal >= 300) {
                 $paymentLink = $this->context->link->getModuleLink(
                     'tpay',
-                    'payment',
+                    'validation',
                     array('type' => TPAY_PAYMENT_INSTALLMENTS)
                 );
                 $availablePayments[] = array(

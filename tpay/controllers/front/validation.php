@@ -24,9 +24,7 @@ require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
  */
 class TpayValidationModuleFrontController extends ModuleFrontController
 {
-    private $tpayClient = false;
     private $tpayClientConfig = array();
-    private $currentOrderId = 0;
     private $paymentType = false;
     private $installments = false;
 
@@ -34,12 +32,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     {
         $this->display_column_left = false;
         $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
-
         $cart = $this->context->cart;
-        $currency = $this->context->currency;
         $customer = new Customer($cart->id_customer);
         $paymentType = Tools::getValue('type');
-
         $errorRedirectLink = $this->context->link->getPageLink('order', true, null, 'step=3');
 
         /*
@@ -87,66 +82,22 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             $this->installments = true;
         }
         $this->paymentType = $paymentType;
-
-        if ((int)$this->context->cookie->last_order > 0) {
-            $orderId = $this->context->cookie->last_order;
-            $order = new Order($orderId);
-            $orderTotal = (float)$order->total_paid;
-        } else {
-            $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
-            $this->module->validateOrder(
-                (int)$cart->id,
-                Configuration::get('TPAY_NEW'),
-                $orderTotal,
-                $this->module->displayName,
-                null,
-                array(),
-                (int)$currency->id,
-                false,
-                $customer->secure_key
-            );
-            $orderId = OrderCore::getOrderByCartId($cart->id);
-            $this->context->cookie->last_order = $orderId;
-            $this->context->cookie->__set('last_order', $orderId);
-        }
-
+        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
         if (!empty($surcharge)) {
             $orderTotal += $surcharge;
             $this->context->smarty->assign([
-                'surcharge' => $surcharge,
+                'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge), 2, '.', ''),
             ]);
-        } else {
-            $surcharge = 0.0;
         }
         $this->context->smarty->assign([
-            'orderTotal' => $orderTotal,
+            'orderTotal' => (double)$orderTotal,
         ]);
-        if (empty($orderId)) {
-            Tools::redirect($this->context->link->getModuleLink('tpay', 'ordererror'));
-        }
-
-        $this->currentOrderId = $orderId;
-        $crc_sum = md5($cart->id . $this->context->cookie->mail . $customer->secure_key . time());
 
         try {
             /*
-             * Set basic config fields
-             */
-            if (
-                $paymentType === TPAY_PAYMENT_BASIC || $this->installments
-            ) {
-                $this->tpayClientConfig['kwota'] = $orderTotal;
-                $this->tpayClientConfig['crc'] = $crc_sum;
-            }
-            /*
-             * Insert order to db
-             */
-            TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
-
-            /*
-             * Get required payment form
-             */
+            * Get required payment form
+            */
             $this->renderBasic();
         } catch (Exception $e) {
             $this->handleException($e);
@@ -158,71 +109,59 @@ class TpayValidationModuleFrontController extends ModuleFrontController
      */
     private function renderBasic()
     {
-        $this->initBasicClient();
-        $orderId = $this->currentOrderId;
-        $order = new Order($orderId);
+
         $paymentViewType = (int)Configuration::get('TPAY_BANK_ON_SHOP');
         $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
         $showRegulations = (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS');
-        $this->tpayClientConfig['wyn_url'] = $this->context->link->getModuleLink(
-            'tpay',
-            'confirmation',
-            array('type' => TPAY_PAYMENT_BASIC)
-        );
         $tplDir = _PS_MODULE_DIR_ . 'tpay/views/templates/front';
         $autoSubmit = false;
-
-        $Client = $this->tpayClient;
+        $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
+        $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
         if ($this->installments) {
-            $paymentConfig = $Client->getTransactionFormConfig($this->tpayClientConfig);
             $autoSubmit = true;
             $this->setTemplate('paymentBasic.tpl');
         } else {
             switch ($paymentViewType) {
                 case TPAY_VIEW_REDIRECT:
-                    $paymentConfig = $Client->getTransactionFormConfig($this->tpayClientConfig);
                     $autoSubmit = true;
                     $this->setTemplate('paymentBasic.tpl');
                     break;
                 case TPAY_VIEW_ICONS:
-                    $paymentConfig = $Client->getBankSelectionFormConfig($this->tpayClientConfig, $showRegulations);
                     $this->context->smarty->assign(['showRegulations' => $showRegulations]);
                     $this->setTemplate('paymentBanks.tpl');
                     break;
                 case TPAY_VIEW_LIST:
-                    $paymentConfig = $Client->getBankSelectionFormConfig($this->tpayClientConfig, $showRegulations);
                     $this->context->smarty->assign(['showRegulations' => $showRegulations]);
                     $this->setTemplate('paymentBanksList.tpl');
                     break;
                 default:
-                    $paymentConfig = $Client->getTransactionFormConfig($this->tpayClientConfig);
                     $autoSubmit = true;
                     $this->setTemplate('paymentBasic.tpl');
                     break;
             }
 
         }
+        $cart = $this->context->cart;
         $productsVariables = [
-            'product_name',
-            'product_price_wt',
+            'name',
+            'price_wt',
             'cart_quantity',
             'total_wt',
-
         ];
         $orderProductsDetails = [];
-        $numberOfProducts = count($order->getCartProducts());
+        $numberOfProducts = count($cart->getProducts());
         for ($i = 0; $i < $numberOfProducts; $i++) {
-            foreach ($order->getCartProducts()[$i] as $key => $value) {
+            foreach ($cart->getProducts()[$i] as $key => $value) {
                 if (in_array($key, $productsVariables)) {
                     $orderProductsDetails[$i][array_search($key,
-                        $productsVariables)] = $key === 'total_wt' || $key === 'product_price_wt' ?
-                        (double)$value : $value;
+                        $productsVariables)] = ($key === 'price_wt' || $key === 'total_wt') ?
+                        number_format(str_replace(array(',', ' '), array('.', ''), $value), 2, '.', '') : $value;
                 }
             }
             ksort($orderProductsDetails[$i]);
         }
-        $addressDeliveryId = $order->id_address_delivery;
-        $addressInvoiceId = $order->id_address_invoice;
+        $addressDeliveryId = $cart->id_address_delivery;
+        $addressInvoiceId = $cart->id_address_invoice;
         $InvAddress = new AddressCore($addressInvoiceId);
         $deliveryAddress = new AddressCore($addressDeliveryId);
         $invAddressIndexes = [
@@ -247,41 +186,19 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             }
         }
         $this->context->smarty->assign(array(
-            'paymentConfig' => $paymentConfig,
-            'tplDir'        => $tplDir,
-            'autoSubmit'    => $autoSubmit,
-            'blikOn'        => $blikOn,
-            'orderTest'     => '123',
-
+            'paymentConfig'   => $paymentConfig,
+            'tplDir'          => $tplDir,
+            'autoSubmit'      => $autoSubmit,
+            'blikOn'          => $blikOn,
             'products'        => $orderProductsDetails,
-            'shippingCost'    => (double)$order->total_shipping_tax_incl,
+            'shippingCost'    => number_format(str_replace(array(',', ' '), array('.', ''),
+                $cart->getTotalShippingCost()), 2, '.', ''),
             'invAddress'      => $invAddressData,
             'deliveryAddress' => $deliveryAddressData,
+            'installments'    => $this->installments,
         ));
     }
 
-    private function initBasicClient()
-    {
-        $this->tpayClient = TpayHelperClient::getBasicClient();
-
-        $this->tpayClientConfig += array(
-            'opis'         => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
-                $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'      => $this->context->link->getModuleLink('tpay', 'order-success'),
-            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error'),
-            'email'        => $this->context->cookie->email,
-            'imie'         => $this->context->cookie->customer_firstname,
-            'nazwisko'     => $this->context->cookie->customer_lastname,
-            'wyn_url'      => $this->context->link->getModuleLink('tpay', 'confirmation'),
-        );
-        if ($this->installments) {
-            $this->tpayClientConfig += array(
-                'kanal'               => 49,
-                'direct'              => 1,
-                'akceptuje_regulamin' => 1
-            );
-        }
-    }
 
     /**
      * Handles order exceptions.
@@ -327,29 +244,6 @@ class TpayValidationModuleFrontController extends ModuleFrontController
          * redirect client to error page
          */
         Tools::redirect($this->context->link->getModuleLink('tpay', 'ordererror'));
-    }
-
-    /**
-     * Check if module is available.
-     *
-     * @return bool module available
-     */
-    private function validateModuleAvailable()
-    {
-        // Check that this payment option is still available in case the customer changed his address
-        // just before the end of the checkout process
-        $authorized = false;
-        foreach (Module::getPaymentModules() as $module) {
-            if ($module['name'] == 'tpay') {
-                $authorized = true;
-                break;
-            }
-        }
-        if (!$authorized) {
-            die($this->module->l('This payment method is not available.', 'validation'));
-        }
-
-        return $authorized;
     }
 
 }

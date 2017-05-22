@@ -41,17 +41,17 @@
                         {/foreach}
                         <tr>
                             <td colspan="3">{l s='Shipping cost: ' mod='tpay'}</td>
-                            <td>{$shippingCost}{l s='zł'}</td>
+                            <td>{$shippingCost}</td>
                         </tr>
                         {if isset($surcharge)}
                             <tr>
                                 <td colspan="3">{l s='Payment surcharge' mod='tpay'}</td>
-                                <td>{displayPrice price=$surcharge}</td>
+                                <td>{$surcharge}</td>
                             </tr>
                         {/if}
                         <tr>
                             <td colspan="3">{l s='Order price ' mod='tpay'}</td>
-                            <td>{displayPrice price=$orderTotal}
+                            <td>{$orderTotal}
                                 {if $use_taxes == 1}
                                     {l s='(total)' mod='tpay'}
                                 {/if}</td>
