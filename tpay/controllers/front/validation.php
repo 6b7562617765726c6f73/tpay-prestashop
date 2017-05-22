@@ -86,13 +86,13 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
         if (!empty($surcharge)) {
             $orderTotal += $surcharge;
-            $this->context->smarty->assign([
+            $this->context->smarty->assign(array(
                 'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge), 2, '.', ''),
-            ]);
+            ));
         }
-        $this->context->smarty->assign([
+        $this->context->smarty->assign(array(
             'orderTotal' => (double)$orderTotal,
-        ]);
+        ));
 
         try {
             /*
@@ -127,11 +127,11 @@ class TpayValidationModuleFrontController extends ModuleFrontController
                     $this->setTemplate('paymentBasic.tpl');
                     break;
                 case TPAY_VIEW_ICONS:
-                    $this->context->smarty->assign(['showRegulations' => $showRegulations]);
+                    $this->context->smarty->assign(array('showRegulations' => $showRegulations));
                     $this->setTemplate('paymentBanks.tpl');
                     break;
                 case TPAY_VIEW_LIST:
-                    $this->context->smarty->assign(['showRegulations' => $showRegulations]);
+                    $this->context->smarty->assign(array('showRegulations' => $showRegulations));
                     $this->setTemplate('paymentBanksList.tpl');
                     break;
                 default:
@@ -142,16 +142,17 @@ class TpayValidationModuleFrontController extends ModuleFrontController
 
         }
         $cart = $this->context->cart;
-        $productsVariables = [
+        $productsVariables = array(
             'name',
             'price_wt',
             'cart_quantity',
             'total_wt',
-        ];
-        $orderProductsDetails = [];
-        $numberOfProducts = count($cart->getProducts());
+        );
+        $orderProductsDetails = array();
+        $products = $cart->getProducts();
+        $numberOfProducts = count($products);
         for ($i = 0; $i < $numberOfProducts; $i++) {
-            foreach ($cart->getProducts()[$i] as $key => $value) {
+            foreach ($products[$i] as $key => $value) {
                 if (in_array($key, $productsVariables)) {
                     $orderProductsDetails[$i][array_search($key,
                         $productsVariables)] = ($key === 'price_wt' || $key === 'total_wt') ?
@@ -164,7 +165,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $addressInvoiceId = $cart->id_address_invoice;
         $InvAddress = new AddressCore($addressInvoiceId);
         $deliveryAddress = new AddressCore($addressDeliveryId);
-        $invAddressIndexes = [
+        $invAddressIndexes = array(
             'company',
             'lastname',
             'firstname',
@@ -172,14 +173,14 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'address2',
             'postcode',
             'city',
-        ];
-        $invAddressData = [];
+        );
+        $invAddressData = array();
         foreach ($InvAddress as $key => $value) {
             if (in_array($key, $invAddressIndexes)) {
                 $invAddressData[$key] = $value;
             }
         }
-        $deliveryAddressData = [];
+        $deliveryAddressData = array();
         foreach ($deliveryAddress as $key => $value) {
             if (in_array($key, $invAddressIndexes)) {
                 $deliveryAddressData[$key] = $value;

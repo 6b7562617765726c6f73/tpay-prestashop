@@ -13,7 +13,7 @@
  *  @license   LICENSE.txt
  */
 
-require_once _PS_MODULE_DIR_.'tpay/lib/_class_tpay/PaymentBasic.php';
+require_once _PS_MODULE_DIR_.'tpay/lib/_class_tpay/payment_basic.php';
 require_once _PS_MODULE_DIR_.'tpay/lib/_class_tpay/payment_card.php';
 require_once _PS_MODULE_DIR_.'tpay/lib/_class_tpay/payment_white_label.php';
 require_once _PS_MODULE_DIR_.'tpay/lib/_class_tpay/payment_dac.php';

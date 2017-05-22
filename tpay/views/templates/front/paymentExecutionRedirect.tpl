@@ -18,7 +18,7 @@
         }
     </script>
 {/literal}
-<body >
+<body onload="submitTpayForm()">
 <form id="tpay-payment" class="tpay-form" action="https://secure.tpay.com" method="POST">
     {foreach from=$paymentConfig key=name item=value}
         <input type="hidden" value="{$value|escape:'htmlall':'UTF-8'}" name="{$name|escape:'htmlall':'UTF-8'}">

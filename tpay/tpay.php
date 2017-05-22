@@ -85,13 +85,13 @@ class Tpay extends PaymentModule
             Shop::setContext(Shop::CONTEXT_ALL);
         }
 
-        if (version_compare(phpversion(), '5.4.0', '<')) {
+        if (version_compare(phpversion(), '5.3.0', '<')) {
             $this->_errors[] = $this->l(
                 sprintf(
                     'Your PHP version is too old, please upgrade to a newer version. Your version is %s,' .
                     ' library requires %s',
                     phpversion(),
-                    '5.4.0'
+                    '5.3.0'
                 )
             );
 
