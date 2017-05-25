@@ -93,7 +93,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             'email'               => $this->context->cookie->email,
             'imie'                => $this->context->cookie->customer_firstname,
             'nazwisko'            => $this->context->cookie->customer_lastname,
-            'wyn_url'             => $this->context->link->getModuleLink('tpay', 'confirmation'),
+            'wyn_url'             => $this->context->link->getModuleLink('tpay', 'confirmation',
+                array('type' => TPAY_PAYMENT_BASIC)),
             'akceptuje_regulamin' => (int)Tools::getValue('regulations'),
             'kanal'               => (int)Tools::getValue('channel'),
             'md5sum'              => md5((int)Configuration::get('TPAY_ID') . $this->tpayClientConfig['kwota'] .
