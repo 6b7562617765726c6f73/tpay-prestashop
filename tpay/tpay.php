@@ -19,15 +19,17 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__) . '/tpayModel.php';
 require_once dirname(__FILE__) . '/helpers/TpayHelperClient.php';
+require_once dirname(__FILE__) . '/ConfigFieldsDef/ConfigFieldsNames.php';
 
 define('TPAY_PAYMENT_BASIC', 'basic');
+define('TPAY_PAYMENT_CARDS', 'cards');
 define('TPAY_PAYMENT_BANK_ON_SHOP', 'bank');
 define('TPAY_PAYMENT_BLIK', 'blik');
 define('TPAY_PAYMENT_INSTALLMENTS', 'installments');
 define('TPAY_VIEW_REDIRECT', 0);
 define('TPAY_VIEW_ICONS', 1);
 define('TPAY_VIEW_LIST', 2);
-
+define('TPAY_CARD_MIDS', 11);
 define('TPAY_SURCHARGE_AMOUNT', 0);
 define('TPAY_SURCHARGE_PERCENT', 1);
 
@@ -51,7 +53,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.2.2';
+        $this->version = '1.3.0';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -67,8 +69,6 @@ class Tpay extends PaymentModule
 
         $this->confirmUninstall = $this->l('Delete this module?');
         $this->module_key = 'f2eb0ce26233d0b517ba41e81f2e62fe';
-//        if (!Configuration::get('tpay'))
-//            $this->warning = $this->l('No name provided');
     }
 
     /**
@@ -293,16 +293,19 @@ class Tpay extends PaymentModule
             $blikActive = (int)Tools::getValue('TPAY_BLIK_ACTIVE');
             $bannerActive = (int)Tools::getValue('TPAY_BANNER');
             $installmentActive = (int)Tools::getValue('TPAY_INSTALLMENTS_ACTIVE');
+            $userDefinedStatusesActive = (int)Tools::getValue('TPAY_OWN_STATUS');
             Configuration::updateValue('TPAY_INSTALLMENTS_ACTIVE', $installmentActive);
             Configuration::updateValue('TPAY_BASIC_ACTIVE', $basicActive);
             Configuration::updateValue('TPAY_BLIK_ACTIVE', $blikActive);
             Configuration::updateValue('TPAY_BANNER', $bannerActive);
+            Configuration::updateValue('TPAY_OWN_STATUS', $userDefinedStatusesActive);
             /**
              * debug option.
              */
             $debug = (int)Tools::getValue('TPAY_DEBUG');
             Configuration::updateValue('TPAY_DEBUG', $debug);
-
+            $debug = (int)Tools::getValue('TPAY_CARD_DEBUG');
+            Configuration::updateValue('TPAY_CARD_DEBUG', $debug);
             /**
              * debug option.
              */
@@ -360,7 +363,9 @@ class Tpay extends PaymentModule
                 }
             }
 
-
+            Configuration::updateValue('TPAY_OWN_WAITING', Tools::getValue('TPAY_OWN_WAITING'));
+            Configuration::updateValue('TPAY_OWN_ERROR', Tools::getValue('TPAY_OWN_ERROR'));
+            Configuration::updateValue('TPAY_OWN_PAID', Tools::getValue('TPAY_OWN_PAID'));
             /**
              * basic settings validation.
              */
@@ -368,11 +373,19 @@ class Tpay extends PaymentModule
             $userId = Tools::getValue('TPAY_ID');
             $apiKey = (string)Tools::getValue('TPAY_APIKEY');
             $apiPass = Tools::getValue('TPAY_APIPASS');
+            $cardsActive = Tools::getValue('TPAY_CARD_ACTIVE');
+            for ($i = 1; $i < TPAY_CARD_MIDS; $i++) {
+                foreach (CONFIG_FIELDS_CARD as $key) {
+                    Configuration::updateValue($key . $i, Tools::getValue($key . $i));
+                }
+            }
 
             Configuration::updateValue('TPAY_KEY', $userKey);
             Configuration::updateValue('TPAY_ID', $userId);
             Configuration::updateValue('TPAY_APIKEY', $apiKey);
             Configuration::updateValue('TPAY_APIPASS', $apiPass);
+            Configuration::updateValue('TPAY_CARD_ACTIVE', $cardsActive);
+
 
             if (
                 $basicActive === 1
@@ -415,7 +428,7 @@ class Tpay extends PaymentModule
 
             $output .= $this->displayConfirmation($this->l('Settings saved'));
         }
-
+        include_once (dirname(__FILE__).'/views/templates/admin/configuration.tpl');
         return $output . $this->displayForm();
     }
 
@@ -478,291 +491,21 @@ class Tpay extends PaymentModule
         } else {
             $switch = 'radio';
         }
+        $orderStatesData = OrderState::getOrderStates(1);
+        $orderStates = array();
+        foreach ($orderStatesData as $state) {
+            array_push($orderStates, array(
+                'id_option' => $state['id_order_state'],
+                'name'      => $state['name']
+            ));
+        }
 
-        $generalSettings = array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Basic settings'),
-                    'image' => $this->_path . 'views/img/logo.jpg',
-                ),
-                'input'  => array(
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('User Id'),
-                        'name'     => 'TPAY_ID',
-                        'size'     => 50,
-                        'required' => true,
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('Security code'),
-                        'name'     => 'TPAY_KEY',
-                        'size'     => 50,
-                        'required' => true,
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Debug mode'),
-                        'name'    => 'TPAY_DEBUG',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_debug_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_debug_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                        'desc'    => '<b>' . $this->l('WARNING') . '</b>' . $this->l(' turn off in production mode'),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('Google analytics code'),
-                        'name'     => 'TPAY_GOOGLE_ID',
-                        'size'     => 50,
-                        'required' => false,
-                        'desc'     => $this->l('Complement this box will allow the module to send statistics'),
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Check the IP address for notification server'),
-                        'name'    => 'TPAY_CHECK_IP',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_check_ip_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_check_ip_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('tpay payments banner on product cards'),
-                        'name'    => 'TPAY_BANNER',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_banner_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_banner_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Surcharge for the use of payment'),
-                        'name'    => 'TPAY_SURCHARGE_ACTIVE',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_surcharge_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_surcharge_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => 'radio',
-                        'label'   => $this->l('Surcharge type'),
-                        'name'    => 'TPAY_SURCHARGE_TYPE',
-                        'is_bool' => false,
-                        'class'   => 'child',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_surcharge_type_on',
-                                'value' => TPAY_SURCHARGE_AMOUNT,
-                                'label' => $this->l('Quota'),
-                            ),
-                            array(
-                                'id'    => 'tpay_surcharge_type_off',
-                                'value' => TPAY_SURCHARGE_PERCENT,
-                                'label' => $this->l('Percentage'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('Surcharge value'),
-                        'name'     => 'TPAY_SURCHARGE_VALUE',
-                        'size'     => 50,
-                        'required' => false,
-                    ),
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ),
-            ),
-        );
+        $generalSettings = require_once dirname(__FILE__) . '/ConfigFieldsDef/GeneralSettingsDefinition.php';
+        $basicPayment = require_once dirname(__FILE__) . '/ConfigFieldsDef/BasicPaymentDefinition.php';
+        $blikPayment = require_once dirname(__FILE__) . '/ConfigFieldsDef/BlikPaymentDefinition.php';
+        $cardPayment = require_once dirname(__FILE__) . '/ConfigFieldsDef/CardPaymentDefinition.php';
 
-        $basicPayment = array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Settings for standard payment'),
-                    'image' => $this->_path . 'views/img/logo.jpg',
-                ),
-                'input'  => array(
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Payment active'),
-                        'name'    => 'TPAY_BASIC_ACTIVE',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_active_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_active_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Show installments payment option (over 300zł)'),
-                        'name'    => 'TPAY_INSTALLMENTS_ACTIVE',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_installments_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_installments_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => 'radio',
-                        'label'   => $this->l('View for payment channels'),
-                        'name'    => 'TPAY_BANK_ON_SHOP',
-                        'is_bool' => false,
-                        'class'   => 'child',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_bank_selection_redirect',
-                                'value' => TPAY_VIEW_REDIRECT,
-                                'label' => $this->l('Redirect to tpay'),
-                            ),
-                            array(
-                                'id'    => 'tpay_bank_selection_icons',
-                                'value' => TPAY_VIEW_ICONS,
-                                'label' => $this->l('Tiles'),
-                            ),
-                            array(
-                                'id'    => 'tpay_bank_selection_list',
-                                'value' => TPAY_VIEW_LIST,
-                                'label' => $this->l('List'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Show tpay regulations on site'),
-                        'name'    => 'TPAY_SHOW_REGULATIONS',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'tpay_regulations_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'tpay_regulations_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ),
-            ),
-        );
-        $blikPayment = array(
-            'form' => array(
-                'legend' => array(
-                    'title' => $this->l('Settings for blik level 0 payment'),
-                    'image' => $this->_path . 'views/img/logo.jpg',
-                ),
-                'input'  => array(
-                    array(
-                        'type'    => $switch,
-                        'label'   => $this->l('Payment active'),
-                        'name'    => 'TPAY_BLIK_ACTIVE',
-                        'is_bool' => true,
-                        'class'   => 't',
-                        'values'  => array(
-                            array(
-                                'id'    => 'blik_active_on',
-                                'value' => 1,
-                                'label' => $this->l('Yes'),
-                            ),
-                            array(
-                                'id'    => 'blik_active_off',
-                                'value' => 0,
-                                'label' => $this->l('No'),
-                            ),
-                        ),
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('API key'),
-                        'name'     => 'TPAY_APIKEY',
-                        'size'     => 50,
-                        'required' => true,
-                    ),
-                    array(
-                        'type'     => 'text',
-                        'label'    => $this->l('API password'),
-                        'name'     => 'TPAY_APIPASS',
-                        'size'     => 50,
-                        'required' => true,
-                    ),
-
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                    'class' => 'button',
-                ),
-            ),
-        );
-        return array($generalSettings, $basicPayment, $blikPayment);
+        return array($generalSettings, $basicPayment, $blikPayment, $cardPayment);
     }
 
     /**
@@ -772,24 +515,16 @@ class Tpay extends PaymentModule
      */
     private function getConfigFieldsValues()
     {
-        return array(
-            'TPAY_ID'                  => Configuration::get('TPAY_ID'),
-            'TPAY_KEY'                 => Configuration::get('TPAY_KEY'),
-            'TPAY_BANK_ON_SHOP'        => Configuration::get('TPAY_BANK_ON_SHOP'),
-            'TPAY_BASIC_ACTIVE'        => Configuration::get('TPAY_BASIC_ACTIVE'),
-            'TPAY_BLIK_ACTIVE'         => Configuration::get('TPAY_BLIK_ACTIVE'),
-            'TPAY_APIKEY'              => Configuration::get('TPAY_APIKEY'),
-            'TPAY_APIPASS'             => Configuration::get('TPAY_APIPASS'),
-            'TPAY_DEBUG'               => Configuration::get('TPAY_DEBUG'),
-            'TPAY_GOOGLE_ID'           => Configuration::get('TPAY_GOOGLE_ID'),
-            'TPAY_CHECK_IP'            => Configuration::get('TPAY_CHECK_IP'),
-            'TPAY_SHOW_REGULATIONS'    => Configuration::get('TPAY_SHOW_REGULATIONS'),
-            'TPAY_SURCHARGE_ACTIVE'    => Configuration::get('TPAY_SURCHARGE_ACTIVE'),
-            'TPAY_SURCHARGE_TYPE'      => Configuration::get('TPAY_SURCHARGE_TYPE'),
-            'TPAY_SURCHARGE_VALUE'     => Configuration::get('TPAY_SURCHARGE_VALUE'),
-            'TPAY_BANNER'              => Configuration::get('TPAY_BANNER'),
-            'TPAY_INSTALLMENTS_ACTIVE' => Configuration::get('TPAY_INSTALLMENTS_ACTIVE'),
-        );
+        $config = array();
+        foreach (CONFIG_FIELDS as $key) {
+            $config[$key] = Configuration::get($key);
+        }
+        for ($i = 1; $i < TPAY_CARD_MIDS; $i++) {
+            foreach (CONFIG_FIELDS_CARD as $key) {
+                $config[$key . $i] = Configuration::get($key . $i);
+            }
+        }
+        return $config;
     }
 
     /**
@@ -815,7 +550,7 @@ class Tpay extends PaymentModule
      *
      * @param bool $returnPayments
      *
-     * @return bool
+     * @return array
      */
     public function hookPayment($returnPayments = false)
     {
@@ -831,21 +566,20 @@ class Tpay extends PaymentModule
         $cart = $this->context->cart;
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $basicActive = (int)Configuration::get('TPAY_BASIC_ACTIVE');
+        $cardActive = (int)Configuration::get('TPAY_CARD_ACTIVE');
         $installmentsActive = (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
-        if ($basicActive === 1) {
+        if ($basicActive === 1 && $currency->iso_code === 'PLN') {
 
             $paymentLink = $this->context->link->getModuleLink(
                 'tpay',
                 'validation',
                 array('type' => TPAY_PAYMENT_BASIC)
             );
-
-
             $availablePayments[] = array(
                 'type'        => TPAY_PAYMENT_BASIC,
                 'paymentLink' => $paymentLink,
-                'title'       => $this->l('Pay by tpay'),
-                'cta_text'    => $this->l('Pay by tpay'),
+                'title'       => $this->l('Pay by online transfer with tpay.com'),
+                'cta_text'    => $this->l('Pay by online transfer with tpay.com'),
                 'logo'        => _MODULE_DIR_ . 'tpay/views/img/logo.png',
                 'action'      => $this->context->link->getModuleLink(
                     $this->name,
@@ -874,13 +608,29 @@ class Tpay extends PaymentModule
                     ),
                 );
             }
-
         }
-
-        if ($currency->iso_code !== 'PLN') {
-            $availablePayments = array();
+        if ($cardActive === 1 && TpayHelperClient::getCardMidNumber($currency->iso_code,
+                _PS_BASE_URL_ . __PS_BASE_URI__ )
+        ) {
+            $paymentLink = $this->context->link->getModuleLink(
+                'tpay',
+                'validation',
+                array('type' => TPAY_PAYMENT_CARDS)
+            );
+            $availablePayments[] = array(
+                'type'        => TPAY_PAYMENT_CARDS,
+                'paymentLink' => $paymentLink,
+                'title'       => $this->l('Pay by credit card with tpay.com'),
+                'cta_text'    => $this->l('Pay by credit card with tpay.com'),
+                'logo'        => _MODULE_DIR_ . 'tpay/views/img/logo.png',
+                'action'      => $this->context->link->getModuleLink(
+                    $this->name,
+                    'validation',
+                    array('type' => TPAY_PAYMENT_CARDS),
+                    true
+                ),
+            );
         }
-
 
         if ($returnPayments === true) {
             return $availablePayments;
@@ -900,6 +650,7 @@ class Tpay extends PaymentModule
 
         return $this->display(__FILE__, 'payment.tpl');
     }
+
 
     /**
      * Hook for displaying tpay logo on product pages.

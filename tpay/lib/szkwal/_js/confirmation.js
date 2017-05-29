@@ -1,5 +1,5 @@
-var bank_account_div = document.getElementById('tpay-bank-account'),
-    bank_select = document.getElementById('tpay-bank-select');
+var bank_account_div = document.getElementById('transferuj-bank-account'),
+    bank_select = document.getElementById('transferuj-bank-select');
 
 bank_select.onchange = function () {
     bank_account_div.innerText = this.value;

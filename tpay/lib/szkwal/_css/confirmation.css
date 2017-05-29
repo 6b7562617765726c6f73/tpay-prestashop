@@ -1,30 +1,30 @@
-#tpay-szkwal-confirmation {
+#transferuj-szkwal-confirmation {
     border: 1px solid #B2B2B2;
     padding: 10px;
     background: #FFFFF0;
     max-width: 500px;
 }
 
-#tpay-szkwal-confirmation .tpay-row {
+#transferuj-szkwal-confirmation .transferuj-row {
     overflow: hidden;
     margin-bottom: 10px;
 }
 
-#tpay-szkwal-confirmation .tpay-row > div {
+#transferuj-szkwal-confirmation .transferuj-row > div {
     float: left;
     box-sizing: border-box;
 }
 
-#tpay-szkwal-confirmation .tpay-row .col-l {
+#transferuj-szkwal-confirmation .transferuj-row .col-l {
     float: left;
     width: 30%;
 }
 
-#tpay-szkwal-confirmation .tpay-row .col-r {
+#transferuj-szkwal-confirmation .transferuj-row .col-r {
     float: left;
     width: 70%;
 }
 
-#tpay-szkwal-confirmation .client-title {
+#transferuj-szkwal-confirmation .client-title {
     font-weight: bold;
 }

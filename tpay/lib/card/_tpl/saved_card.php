@@ -1,5 +1,0 @@
-<form id="tpay-payment" action="<?php echo $data['confirmation_url'] ?>" method="POST">
-    <input type="hidden" name="sale_auth" value="<?php echo $data['sale_auth'] ?>">
-    <input type="hidden" name="order_id" value="<?php echo $data['order_id'] ?>">
-    <button class="tpay" type="submit"><?php Tpay\Lang::l('debit') ?></button>
-</form>

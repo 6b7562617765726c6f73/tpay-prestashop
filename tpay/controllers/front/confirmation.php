@@ -1,4 +1,5 @@
 <?php
+
 /**
  * NOTICE OF LICENSE.
  *
@@ -16,8 +17,8 @@
 /**
  * include tpay client and model functions.
  */
-require_once _PS_MODULE_DIR_.'tpay/tpayModel.php';
-require_once _PS_MODULE_DIR_.'tpay/helpers/TpayHelperClient.php';
+require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
+require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
 
 /**
  * Class ConfirmationModuleFrontController.
@@ -36,20 +37,22 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     {
         $paymentType = Tools::getValue('type');
 
-
         switch ($paymentType) {
             case TPAY_PAYMENT_INSTALLMENTS:
             case TPAY_PAYMENT_BASIC:
-                $paymentType = TPAY_PAYMENT_BASIC;
+                $this->paymentType = TPAY_PAYMENT_BASIC;
                 $this->initBasicClient();
+                $this->confirmPaymentBasic();
+                break;
+            case 'sale':
+                $this->initCardClient();
+                $this->confirmPaymentCard();
                 break;
             default:
-                die('incorrect');
+                die('incorrect payment type');
         }
 
-        $this->paymentType = $paymentType;
 
-        $this->confirmPayment();
         die;
     }
 
@@ -62,32 +65,30 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
         }
     }
 
-
-
     /**
-     * Confirm payment.
+     * Confirm basic payment.
      *
      * @return bool
      */
-    private function confirmPayment()
+    private function confirmPaymentBasic()
     {
         try {
 
-                $orderRes = $this->tpayClient->checkPayment($this->paymentType);
-                $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
-                $orderId = (int)$orderData['tj_order_id'];
-                $surcharge = (float)$orderData['tj_surcharge'];
-                $order = new Order($orderId);
+            $orderRes = $this->tpayClient->checkPayment($this->paymentType);
+            $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
+            $orderId = (int)$orderData['tj_order_id'];
+            $surcharge = (float)$orderData['tj_surcharge'];
+            $order = new Order($orderId);
 
-                $orderTotal = round((float)$order->total_paid + $surcharge, 2);
-                $orderTotal = number_format($orderTotal, 2, '.', '');
+            $orderTotal = round((float)$order->total_paid + $surcharge, 2);
+            $orderTotal = number_format($orderTotal, 2, '.', '');
 
-                $this->tpayClient->validateSign(
-                    $orderRes['md5sum'],
-                    $orderRes['tr_id'],
-                    $orderTotal,
-                    $orderRes['tr_crc']
-                );
+            $this->tpayClient->validateSign(
+                $orderRes['md5sum'],
+                $orderRes['tr_id'],
+                $orderTotal,
+                $orderRes['tr_crc']
+            );
 
 
             if ($orderId === 0) {
@@ -99,8 +100,8 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             return true;
         } catch (Exception $e) {
             $log = array(
-                'e' => $e,
-                'post' => $_POST,
+                'e'     => $e,
+                'post'  => $_POST,
                 'order' => isset($orderData) ? $orderData : array(),
             );
 
@@ -129,12 +130,78 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
 
         $lastOrderState = $orderHistory->getLastOrderState($orderId);
         $lastOrderState = (int)$lastOrderState->id;
-        $targetOrderState = !$error ? (int)Configuration::get('TPAY_CONFIRMED') : (int)Configuration::get('TPAY_ERROR');
+        if ((int)Configuration::get('TPAY_OWN_STATUS') === 1) {
+            $targetOrderState = !$error ? (int)Configuration::get('TPAY_OWN_PAID') : Configuration::get('TPAY_OWN_ERROR');
+        } else {
+            $targetOrderState = !$error ? (int)Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
+        }
+
 
         if ($lastOrderState !== $targetOrderState) {
             $orderHistory->id_order = $orderId;
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->add();
+        }
+    }
+
+    private function initCardClient()
+    {
+        $midId = explode('*tpay*', Tools::getValue('order_id'));
+        $this->tpayClient = TpayHelperClient::getCardClient($midId[0]);
+        $checkIp = (bool)(int)Configuration::get('TPAY_CHECK_IP');
+        if (!$checkIp) {
+            $this->tpayClient->disableValidationServerIP();
+        }
+    }
+
+    /**
+     * Confirm payment.
+     *
+     * @return bool
+     */
+    private function confirmPaymentCard()
+    {
+        try {
+            $orderRes = $this->tpayClient->handleNotification();
+            $tpayOrderId = explode('*tpay*', $orderRes['order_id']);
+            $orderData = TpayModel::getOrderIdAndSurcharge($tpayOrderId[1]);
+            $orderId = (int)$orderData['tj_order_id'];
+            $surcharge = (float)$orderData['tj_surcharge'];
+            $order = new Order($orderId);
+            $currency = (new Currency($order->id_currency));
+            $currency = $currency->getCurrency($order->id_currency);
+            $orderTotal = round((float)$order->total_paid + $surcharge, 2);
+            $orderTotal = number_format($orderTotal, 2, '.', '');
+
+            $this->tpayClient->validateSign($orderRes['sign'],
+                $orderRes['sale_auth'], $orderRes['card'], (float)$orderTotal,
+                $orderRes['date'], 'correct', $currency['iso_code_num'], isset($orderRes['test_mode']) ? '1' : '',
+                $orderRes['order_id']);
+
+            if ($orderId === 0) {
+                return false;
+            }
+
+            $this->setOrderAsConfirmed($orderId);
+
+            return true;
+        } catch (Exception $e) {
+            $log = array(
+                'e'     => $e,
+                'post'  => $_POST,
+                'order' => isset($orderData) ? $orderData : array(),
+            );
+
+            $debug_on = (bool)(int)Configuration::get('TPAY_CARD_DEBUG');
+
+            if ($debug_on) {
+                echo '<pre>';
+                var_dump($log);
+                echo '</pre>';
+                die;
+            }
+
+            return false;
         }
     }
 

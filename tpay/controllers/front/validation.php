@@ -65,6 +65,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         if (!in_array($paymentType, array(
             TPAY_PAYMENT_BASIC,
             TPAY_PAYMENT_INSTALLMENTS,
+            TPAY_PAYMENT_CARDS,
         ))
         ) {
             Tools::redirect($errorRedirectLink);
@@ -73,6 +74,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
          * is payment active
          */
         if (($paymentType === TPAY_PAYMENT_BASIC) && (int)Configuration::get('TPAY_BASIC_ACTIVE') !== 1) {
+            Tools::redirect($errorRedirectLink);
+        }
+        if (($paymentType === TPAY_PAYMENT_CARDS) && (int)Configuration::get('TPAY_CARD_ACTIVE') !== 1) {
             Tools::redirect($errorRedirectLink);
         }
         if (($paymentType === TPAY_PAYMENT_INSTALLMENTS) && (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE') !== 1) {
@@ -91,14 +95,16 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             ));
         }
         $this->context->smarty->assign(array(
-            'orderTotal' => (double)$orderTotal,
+            'orderTotal' => number_format(str_replace(array(',', ' '), array('.', ''), $orderTotal), 2, '.', ''),
         ));
 
         try {
-            /*
-            * Get required payment form
-            */
-            $this->renderBasic();
+            if ($paymentType === TPAY_PAYMENT_BASIC || $paymentType === TPAY_PAYMENT_INSTALLMENTS) {
+                $this->renderBasic();
+            } else {
+                $this->renderCard();
+            }
+
         } catch (Exception $e) {
             $this->handleException($e);
         }
@@ -111,12 +117,11 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     {
 
         $paymentViewType = (int)Configuration::get('TPAY_BANK_ON_SHOP');
-        $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
+
         $showRegulations = (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS');
-        $tplDir = _PS_MODULE_DIR_ . 'tpay/views/templates/front';
+
         $autoSubmit = false;
-        $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
-        $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
+
         if ($this->installments) {
             $autoSubmit = true;
             $this->setTemplate('paymentBasic.tpl');
@@ -141,6 +146,16 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             }
 
         }
+        $this->assignSmartyData($autoSubmit);
+
+    }
+
+    private function assignSmartyData($autoSubmit)
+    {
+        $tplDir = _PS_MODULE_DIR_ . 'tpay/views/templates/front';
+        $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
+        $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
+        $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
         $cart = $this->context->cart;
         $productsVariables = array(
             'name',
@@ -200,6 +215,18 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         ));
     }
 
+    private function renderCard()
+    {
+        $midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
+            _PS_BASE_URL_ . __PS_BASE_URI__);
+        $paymentCard = TpayHelperClient::getCardClient($midId);
+        $this->context->smarty->assign(array(
+            'form' => $paymentCard->getDirectCardForm('../../modules/tpay/lib/',
+                'payment?type=' . TPAY_PAYMENT_CARDS, false)
+        ));
+        $this->setTemplate('paymentCard.tpl');
+        $this->assignSmartyData(false);
+    }
 
     /**
      * Handles order exceptions.
@@ -225,8 +252,8 @@ class TpayValidationModuleFrontController extends ModuleFrontController
 
         $lastOrderState = $orderHistory->getLastOrderState($this->currentOrderId);
         $lastOrderState = (int)$lastOrderState->id;
-        $targetOrderState = (int)Configuration::get('TPAY_ERROR');
-
+        $targetOrderState = (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?
+            Configuration::get('TPAY_OWN_ERROR') : Configuration::get('TPAY_ERROR');
         if ($lastOrderState !== $targetOrderState) {
             $orderHistory->id_order = $this->currentOrderId;
             $orderHistory->changeIdOrderState($targetOrderState, $this->currentOrderId);
