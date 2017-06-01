@@ -221,7 +221,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             _PS_BASE_URL_ . __PS_BASE_URI__);
         $paymentCard = TpayHelperClient::getCardClient($midId);
         $this->context->smarty->assign(array(
-            'form' => $paymentCard->getDirectCardForm('../../modules/tpay/lib/',
+            'form' => $paymentCard->getDirectCardForm(__PS_BASE_URI__ . 'modules/tpay/lib/',
                 'payment?type=' . TPAY_PAYMENT_CARDS, false)
         ));
         $this->setTemplate('paymentCard.tpl');

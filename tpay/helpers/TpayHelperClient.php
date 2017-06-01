@@ -15,6 +15,7 @@
 
 require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/PaymentBasic.php';
 require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/PaymentCard.php';
+require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/TransactionApi.php';
 
 /**
  * Class TpayHelperClient.
@@ -32,6 +33,21 @@ class TpayHelperClient extends Helper
         $merchantSecret = Configuration::get('TPAY_KEY');
 
         return new \Tpay\PaymentBasic($merchantId, $merchantSecret);
+    }
+
+    /**
+     * Returns transaction api tpay client.
+     *
+     * @return \Tpay\TransactionAPI
+     */
+    public static function getApiClient()
+    {
+        $merchantId = (int)Configuration::get('TPAY_ID');
+        $merchantSecret = Configuration::get('TPAY_KEY');
+        $apiKey = Configuration::get('TPAY_APIKEY');
+        $apiPass = Configuration::get('TPAY_APIPASS');
+
+        return new \Tpay\TransactionAPI($apiKey, $apiPass, $merchantId, $merchantSecret);
     }
 
     /**

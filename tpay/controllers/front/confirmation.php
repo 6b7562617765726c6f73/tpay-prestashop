@@ -174,7 +174,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $orderTotal = number_format($orderTotal, 2, '.', '');
 
             $this->tpayClient->validateSign($orderRes['sign'],
-                $orderRes['sale_auth'], $orderRes['card'], (float)$orderTotal,
+                $orderRes['sale_auth'], $orderRes['card'], (double)$orderTotal,
                 $orderRes['date'], 'correct', $currency['iso_code_num'], isset($orderRes['test_mode']) ? '1' : '',
                 $orderRes['order_id']);
 

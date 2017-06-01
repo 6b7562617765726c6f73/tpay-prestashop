@@ -63,7 +63,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         );
         $orderId = OrderCore::getOrderByCartId($cart->id);
         $this->currentOrderId = $orderId;
-        $this->tpayClientConfig['kwota'] = $orderTotal;
+        $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
+            $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crc_sum;
         $paymentType = 'basic';
         /*
@@ -86,7 +87,6 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $this->tpayClient = TpayHelperClient::getBasicClient();
 
         $this->tpayClientConfig += array(
-            'id'                  => (int)Configuration::get('TPAY_ID'),
             'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
             'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success'),
@@ -98,8 +98,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 array('type' => TPAY_PAYMENT_BASIC)),
             'akceptuje_regulamin' => (int)Tools::getValue('regulations'),
             'kanal'               => (int)Tools::getValue('channel'),
-            'md5sum'              => md5((int)Configuration::get('TPAY_ID') . $this->tpayClientConfig['kwota'] .
-                $this->tpayClientConfig['crc'] . Configuration::get('TPAY_KEY')),
+
         );
     }
 
@@ -118,8 +117,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         if (isset($response['result']) && (int)$response['result'] === 1) {
 
             $this->tpayCardClient->validateSign($response['sign'], $response['sale_auth'], $response['card'],
-                $this->tpayClientConfig['kwota'], $response['date'], 'correct',
-                $this->context->currency->iso_code_num,
+                $this->tpayClientConfig['kwota'], $response['date'], 'correct', $this->context->currency->iso_code_num,
                 isset($response['test_mode']) ? '1' : '', '', '');
             $this->setOrderAsConfirmed($orderId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
@@ -167,31 +165,29 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         if (Tools::getValue('blikCode') && (is_int((int)(Tools::getValue('blikCode'))))) {
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
-            $this->context->smarty->assign(array(
-                'paymentConfig' => $this->tpayClientConfig,
-            ));
-            $this->setTemplate('paymentExecutionRedirect.tpl');
+
+            $tpayBasicClient = TpayHelperClient::getBasicClient();
+            echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig);
+
         }
     }
 
     private function processBlikPayment($data)
     {
-        $data ['api_password'] = Configuration::get('TPAY_APIPASS');
         $data['kanal'] = 64;
         $data['akceptuje_regulamin'] = 1;
-        $api_key = Configuration::get('TPAY_APIKEY');
-        $url = static::TPAY_URL . '/api/gw/' . $api_key . '/transaction/create';
-        $xml = (new SimpleXMLElement(Curl::doCurlRequest($url, $data)));
-        if ((string)$xml->result[0] == '1') {
-            $postData2 = array();
-            $postData2['code'] = Tools::getValue('blikCode');
-            $postData2['title'] = (string)$xml->title[0];
-            $postData2['api_password'] = $data['api_password'];
+        $tpayApiClient = TpayHelperClient::getApiClient();
 
-            $url = static::TPAY_URL . '/api/gw/' . $api_key . '/transaction/blik';
-            $respBlik = (new SimpleXMLElement(Curl::doCurlRequest($url, $postData2)));
+        $resp = $tpayApiClient->create($data);
 
-            if ((string)$respBlik->result[0] == '1') {
+        if ((int)$resp['result'] === 1) {
+            $blikData = array();
+            $blikData['code'] = Tools::getValue('blikCode');
+            $blikData['title'] = $resp['title'];
+
+            $resp = $tpayApiClient->handleBlikPayment($blikData);
+
+            if ($resp) {
                 $pow_url = $data['pow_url'];
                 Tools::redirect($pow_url);
             } else {

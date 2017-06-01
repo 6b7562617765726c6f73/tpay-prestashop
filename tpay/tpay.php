@@ -53,7 +53,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.0';
+        $this->version = '1.3.1';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -516,11 +516,11 @@ class Tpay extends PaymentModule
     private function getConfigFieldsValues()
     {
         $config = array();
-        foreach (CONFIG_FIELDS as $key) {
+        foreach (ConfigFieldsNames::getConfigFields() as $key) {
             $config[$key] = Configuration::get($key);
         }
         for ($i = 1; $i < TPAY_CARD_MIDS; $i++) {
-            foreach (CONFIG_FIELDS_CARD as $key) {
+            foreach (ConfigFieldsNames::getCardConfigFields() as $key) {
                 $config[$key . $i] = Configuration::get($key . $i);
             }
         }
