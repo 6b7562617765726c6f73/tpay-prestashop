@@ -26,9 +26,9 @@
                     <table>
                         <tr>
                             <td>{l s=' Product' mod='tpay'}</td>
-                            <td>{l s=" Unit price ({$curr})" mod='tpay'}</td>
+                            <td>{l s=" Unit price " mod='tpay'} ({$curr})</td>
                             <td>{l s=' Quantity' mod='tpay'}</td>
-                            <td>{l s=" Total price ({$curr})" mod='tpay'}</td>
+                            <td>{l s=" Total price " mod='tpay'} ({$curr})</td>
                         </tr>
                         {foreach from=$products key=name item=value}
                             <tr>
@@ -66,49 +66,74 @@
                                 <td><h4><b>{l s='Delivery address:' mod='tpay'}</b></h4></td>
                             </tr>
                             <tr>
+                                <td>{l s='Alias' mod='tpay'}</td>
+                                <td>{$deliveryAddress->alias}</td>
+                            </tr>
+                            <tr>
                                 <td>{l s='Company' mod='tpay'}</td>
-                                <td>{$deliveryAddress.company}</td>
+                                <td>{$deliveryAddress->company}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Name and surname' mod='tpay'}</td>
-                                <td>{$deliveryAddress.firstname} {$deliveryAddress.lastname}</td>
+                                <td>{$deliveryAddress->firstname} {$deliveryAddress->lastname}</td>
+                            </tr>
+                            <tr>
+                                <td>{l s='Phone' mod='tpay'}</td>
+                                <td>{$deliveryAddress->phone}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Address' mod='tpay'}</td>
-                                <td>{$deliveryAddress.address1} {$deliveryAddress.address2}</td>
+                                <td>{$deliveryAddress->address1} {$deliveryAddress->address2}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Postal code' mod='tpay'}</td>
-                                <td>{$deliveryAddress.postcode}</td>
+                                <td>{$deliveryAddress->postcode}</td>
                             </tr>
                             <tr>
                                 <td>{l s='City' mod='tpay'}</td>
-                                <td>{$deliveryAddress.city}</td>
+                                <td>{$deliveryAddress->city}</td>
+                            </tr>
+                            <tr>
+                                <td>{l s='Country' mod='tpay'}</td>
+                                <td>{$invAddress->country}</td>
                             </tr>
                         </table>
+
                         <table>
                             <tr>
                                 <td><h4><b>{l s='Invoicing address:' mod='tpay'}</b></h4></td>
                             </tr>
                             <tr>
+                                <td>{l s='Alias' mod='tpay'}</td>
+                                <td>{$invAddress->alias}</td>
+                            </tr>
+                            <tr>
                                 <td>{l s='Company' mod='tpay'}</td>
-                                <td>{$invAddress.company}</td>
+                                <td>{$invAddress->company}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Name and surname' mod='tpay'}</td>
-                                <td>{$invAddress.firstname} {$invAddress.lastname}</td>
+                                <td>{$invAddress->firstname} {$invAddress->lastname}</td>
+                            </tr>
+                            <tr>
+                                <td>{l s='Phone' mod='tpay'}</td>
+                                <td>{$invAddress->phone}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Address' mod='tpay'}</td>
-                                <td>{$invAddress.address1} {$invAddress.address2}</td>
+                                <td>{$invAddress->address1} {$invAddress->address2}</td>
                             </tr>
                             <tr>
                                 <td>{l s='Postal code' mod='tpay'}</td>
-                                <td>{$invAddress.postcode}</td>
+                                <td>{$invAddress->postcode}</td>
                             </tr>
                             <tr>
                                 <td>{l s='City' mod='tpay'}</td>
-                                <td>{$invAddress.city}</td>
+                                <td>{$invAddress->city}</td>
+                            </tr>
+                            <tr>
+                                <td>{l s='Country' mod='tpay'}</td>
+                                <td>{$invAddress->country}</td>
                             </tr>
                         </table>
                     </div>

@@ -27,9 +27,11 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private $tpayClientConfig = array();
     private $paymentType = false;
     private $installments = false;
+    private $displayPrecision;
 
     public function postProcess()
     {
+        $this->displayPrecision = (int)Configuration::get('PS_PRICE_DISPLAY_PRECISION');
         $this->display_column_left = false;
         $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
         $cart = $this->context->cart;
@@ -91,11 +93,13 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         if (!empty($surcharge)) {
             $orderTotal += $surcharge;
             $this->context->smarty->assign(array(
-                'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge), 2, '.', ''),
+                'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge),
+                    $this->displayPrecision, '.', ''),
             ));
         }
         $this->context->smarty->assign(array(
-            'orderTotal' => number_format(str_replace(array(',', ' '), array('.', ''), $orderTotal), 2, '.', ''),
+            'orderTotal' => number_format(str_replace(array(',', ' '), array('.', ''), $orderTotal),
+                $this->displayPrecision, '.', ''),
         ));
 
         try {
@@ -171,7 +175,8 @@ class TpayValidationModuleFrontController extends ModuleFrontController
                 if (in_array($key, $productsVariables)) {
                     $orderProductsDetails[$i][array_search($key,
                         $productsVariables)] = ($key === 'price_wt' || $key === 'total_wt') ?
-                        number_format(str_replace(array(',', ' '), array('.', ''), $value), 2, '.', '') : $value;
+                        number_format(str_replace(array(',', ' '), array('.', ''), $value), $this->displayPrecision,
+                            '.', '') : $value;
                 }
             }
             ksort($orderProductsDetails[$i]);
@@ -180,27 +185,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $addressInvoiceId = $cart->id_address_invoice;
         $InvAddress = new AddressCore($addressInvoiceId);
         $deliveryAddress = new AddressCore($addressDeliveryId);
-        $invAddressIndexes = array(
-            'company',
-            'lastname',
-            'firstname',
-            'address1',
-            'address2',
-            'postcode',
-            'city',
-        );
-        $invAddressData = array();
-        foreach ($InvAddress as $key => $value) {
-            if (in_array($key, $invAddressIndexes)) {
-                $invAddressData[$key] = $value;
-            }
-        }
-        $deliveryAddressData = array();
-        foreach ($deliveryAddress as $key => $value) {
-            if (in_array($key, $invAddressIndexes)) {
-                $deliveryAddressData[$key] = $value;
-            }
-        }
+
         $this->context->smarty->assign(array(
             'paymentConfig'   => $paymentConfig,
             'tplDir'          => $tplDir,
@@ -208,9 +193,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'blikOn'          => $blikOn,
             'products'        => $orderProductsDetails,
             'shippingCost'    => number_format(str_replace(array(',', ' '), array('.', ''),
-                $cart->getTotalShippingCost()), 2, '.', ''),
-            'invAddress'      => $invAddressData,
-            'deliveryAddress' => $deliveryAddressData,
+                $cart->getTotalShippingCost()), $this->displayPrecision, '.', ''),
+            'invAddress'      => $InvAddress,
+            'deliveryAddress' => $deliveryAddress,
             'installments'    => $this->installments,
             'curr'            => $this->context->currency->sign,
         ));
