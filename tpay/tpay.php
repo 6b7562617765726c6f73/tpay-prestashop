@@ -46,6 +46,29 @@ define('TPAY_CARD_CURRENCIES', serialize(array(
  */
 class Tpay extends PaymentModule
 {
+    const LOGO_PATH = 'tpay/views/img/tpay_logo.png';
+    const YES = 1;
+    const NO = 0;
+    const IS_ACTIVE = 1;
+    const NOT_ACTIVE = 0;
+    const BASE_INPUT_SIZE = 50;
+    const BASIC_ACTIVE = 'TPAY_BASIC_ACTIVE';
+    const BLIK_ACTIVE = 'TPAY_BLIK_ACTIVE';
+    const LOGO_ACTIVE = 'TPAY_LOGO_ACTIVE';
+    const DEBUG = 'TPAY_DEBUG';
+    const CHECK_IP = 'TPAY_CHECK_IP';
+    const GOOGLE_ID = 'TPAY_GOOGLE_ID';
+    const BANK_ON_SHOP = 'TPAY_BANK_ON_SHOP';
+    const SHOW_REGULATIONS = 'TPAY_SHOW_REGULATIONS';
+    const TPAY_KEY = 'TPAY_KEY';
+    const TPAY_ID = 'TPAY_ID';
+    const TPAY_BLIK_APIKEY = 'TPAY_BLIK_APIKEY';
+    const TPAY_BLIK_APIPASS = 'TPAY_BLIK_APIPASS';
+    const SURCHARGE_ACTIVE = 'TPAY_SURCHARGE_ACTIVE';
+    const SURCHARGE_TYPE = 'TPAY_SURCHARGE_TYPE';
+    const SURCHARGE_VALUE = 'TPAY_SURCHARGE_VALUE';
+    const SUBMIT = 'submit';
+
     /**
      * Basic moudle info.
      */
@@ -53,7 +76,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.1';
+        $this->version = '1.3.2';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -375,7 +398,7 @@ class Tpay extends PaymentModule
             $apiPass = Tools::getValue('TPAY_APIPASS');
             $cardsActive = Tools::getValue('TPAY_CARD_ACTIVE');
             for ($i = 1; $i < TPAY_CARD_MIDS; $i++) {
-                foreach (CONFIG_FIELDS_CARD as $key) {
+                foreach (ConfigFieldsNames::getCardConfigFields() as $key) {
                     Configuration::updateValue($key . $i, Tools::getValue($key . $i));
                 }
             }
@@ -540,9 +563,7 @@ class Tpay extends PaymentModule
             return false;
         }
 
-        $payment_options = $this->hookPayment(true);
-
-        return $payment_options;
+        return $this->hookPayment(true);
     }
 
     /**

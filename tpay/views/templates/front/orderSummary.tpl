@@ -26,9 +26,9 @@
                     <table>
                         <tr>
                             <td>{l s=' Product' mod='tpay'}</td>
-                            <td>{l s=' Unit price (zł)' mod='tpay'}</td>
+                            <td>{l s=" Unit price ({$curr})" mod='tpay'}</td>
                             <td>{l s=' Quantity' mod='tpay'}</td>
-                            <td>{l s=' Total price (zł)' mod='tpay'}</td>
+                            <td>{l s=" Total price ({$curr})" mod='tpay'}</td>
                         </tr>
                         {foreach from=$products key=name item=value}
                             <tr>

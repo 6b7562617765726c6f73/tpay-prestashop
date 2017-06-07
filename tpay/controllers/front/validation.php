@@ -212,6 +212,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'invAddress'      => $invAddressData,
             'deliveryAddress' => $deliveryAddressData,
             'installments'    => $this->installments,
+            'curr'            => $this->context->currency->sign,
         ));
     }
 

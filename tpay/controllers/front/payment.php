@@ -85,21 +85,30 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     private function initBasicClient()
     {
         $this->tpayClient = TpayHelperClient::getBasicClient();
-
+        $cart = $this->context->cart;
+        $addressInvoiceId = $cart->id_address_invoice;
+        $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
             'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
             'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success'),
             'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error'),
             'email'               => $this->context->cookie->email,
-            'imie'                => $this->context->cookie->customer_firstname,
-            'nazwisko'            => $this->context->cookie->customer_lastname,
+            'imie'                => $billingAddress->firstname,
+            'nazwisko'            => $billingAddress->lastname,
+            'telefon'             => $billingAddress->phone,
+            'adres'               => $billingAddress->address1,
+            'miasto'              => $billingAddress->city,
+            'kod'                 => $billingAddress->postcode,
             'wyn_url'             => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
             'akceptuje_regulamin' => (int)Tools::getValue('regulations'),
-            'kanal'               => (int)Tools::getValue('channel'),
 
         );
+        if ((int)Tools::getValue('channel') > 0) {
+            $this->tpayClientConfig += array('kanal' => (int)Tools::getValue('channel'));
+        }
+
     }
 
     private function processCardPayment($orderId)
