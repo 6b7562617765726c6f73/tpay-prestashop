@@ -27,7 +27,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
 {
     private $tpayClient = false;
     private $paymentType = false;
-
+    private $tpayPaymentId;
     /**
      * Hook header for confirmation processing.
      *
@@ -75,6 +75,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
         try {
 
             $orderRes = $this->tpayClient->checkPayment($this->paymentType);
+            $this->tpayPaymentId = $orderRes['tr_id'];
             $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
             $orderId = (int)$orderData['tj_order_id'];
             $surcharge = (float)$orderData['tj_surcharge'];
@@ -142,6 +143,11 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->add();
         }
+        $order = new Order($orderId);
+        $payment = $order->getOrderPaymentCollection();
+        $payments = $payment->getAll();
+        $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
+        $payments[$payment->count() - 1]->update();
     }
 
     private function initCardClient()
@@ -163,6 +169,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     {
         try {
             $orderRes = $this->tpayClient->handleNotification();
+            $this->tpayPaymentId = $orderRes['sale_auth'];
             $tpayOrderId = explode('*tpay*', $orderRes['order_id']);
             $orderData = TpayModel::getOrderIdAndSurcharge($tpayOrderId[1]);
             $orderId = (int)$orderData['tj_order_id'];

@@ -33,6 +33,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private $tpayCardClient;
 
+    private $tpayPaymentId;
+
     public function initContent()
     {
         $cart = $this->context->cart;
@@ -128,6 +130,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $this->tpayCardClient->validateSign($response['sign'], $response['sale_auth'], $response['card'],
                 $this->tpayClientConfig['kwota'], $response['date'], 'correct', $this->context->currency->iso_code_num,
                 isset($response['test_mode']) ? '1' : '', '', '');
+            $this->tpayPaymentId = $response['sale_auth'];
             $this->setOrderAsConfirmed($orderId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
 
@@ -166,6 +169,11 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->add();
         }
+        $order = new Order($orderId);
+        $payment = $order->getOrderPaymentCollection();
+        $payments = $payment->getAll();
+        $payments[0]->transaction_id = $this->tpayPaymentId;
+        $payments[0]->update();
     }
 
     private function redirectToPayment()

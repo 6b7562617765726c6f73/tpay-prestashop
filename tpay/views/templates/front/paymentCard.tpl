@@ -1,4 +1,4 @@
-{include file="$tplDir/orderSummary.tpl"}
+{include file="$orderSummaryPath"}
 {$form}
 
 <p class="cart_navigation clearfix" id="cart_navigation">

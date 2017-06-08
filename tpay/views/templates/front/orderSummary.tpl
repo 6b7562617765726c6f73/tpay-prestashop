@@ -26,9 +26,9 @@
                     <table>
                         <tr>
                             <td>{l s=' Product' mod='tpay'}</td>
-                            <td>{l s=" Unit price " mod='tpay'} ({$curr})</td>
+                            <td>{l s=" Unit price " mod='tpay'} ({$currencySign})</td>
                             <td>{l s=' Quantity' mod='tpay'}</td>
-                            <td>{l s=" Total price " mod='tpay'} ({$curr})</td>
+                            <td>{l s=" Total price " mod='tpay'} ({$currencySign})</td>
                         </tr>
                         {foreach from=$products key=name item=value}
                             <tr>
@@ -41,17 +41,17 @@
                         {/foreach}
                         <tr>
                             <td colspan="3">{l s='Shipping cost: ' mod='tpay'}</td>
-                            <td>{$shippingCost}</td>
+                            <td>{displayPrice price=$shippingCost}</td>
                         </tr>
                         {if isset($surcharge)}
                             <tr>
                                 <td colspan="3">{l s='Payment surcharge' mod='tpay'}</td>
-                                <td>{$surcharge}</td>
+                                <td>{displayPrice price=$surcharge}</td>
                             </tr>
                         {/if}
                         <tr>
                             <td colspan="3">{l s='Order price ' mod='tpay'}</td>
-                            <td>{$orderTotal}
+                            <td>{displayPrice price=$orderTotal}
                                 {if $use_taxes == 1}
                                     {l s='(total)' mod='tpay'}
                                 {/if}</td>

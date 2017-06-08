@@ -93,13 +93,12 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         if (!empty($surcharge)) {
             $orderTotal += $surcharge;
             $this->context->smarty->assign(array(
-                'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge),
-                    $this->displayPrecision, '.', ''),
+                'surcharge' => $surcharge,
             ));
         }
         $this->context->smarty->assign(array(
-            'orderTotal' => number_format(str_replace(array(',', ' '), array('.', ''), $orderTotal),
-                $this->displayPrecision, '.', ''),
+            'orderTotal' => $orderTotal,
+
         ));
 
         try {
@@ -119,7 +118,6 @@ class TpayValidationModuleFrontController extends ModuleFrontController
      */
     private function renderBasic()
     {
-
         $paymentViewType = (int)Configuration::get('TPAY_BANK_ON_SHOP');
 
         $showRegulations = (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS');
@@ -136,7 +134,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
                     $this->setTemplate('paymentBasic.tpl');
                     break;
                 case TPAY_VIEW_ICONS:
-                    $this->context->smarty->assign(array('showRegulations' => $showRegulations));
+                    $this->context->smarty->assign(array(
+                        'showRegulations' => $showRegulations,
+                    ));
                     $this->setTemplate('paymentBanks.tpl');
                     break;
                 case TPAY_VIEW_LIST:
@@ -154,9 +154,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
 
     }
 
+
     private function assignSmartyData($autoSubmit)
     {
-        $tplDir = _PS_MODULE_DIR_ . 'tpay/views/templates/front';
         $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
         $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
         $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
@@ -175,12 +175,12 @@ class TpayValidationModuleFrontController extends ModuleFrontController
                 if (in_array($key, $productsVariables)) {
                     $orderProductsDetails[$i][array_search($key,
                         $productsVariables)] = ($key === 'price_wt' || $key === 'total_wt') ?
-                        number_format(str_replace(array(',', ' '), array('.', ''), $value), $this->displayPrecision,
-                            '.', '') : $value;
+                        number_format($value, $this->displayPrecision) : $value;
                 }
             }
             ksort($orderProductsDetails[$i]);
         }
+
         $addressDeliveryId = $cart->id_address_delivery;
         $addressInvoiceId = $cart->id_address_invoice;
         $InvAddress = new AddressCore($addressInvoiceId);
@@ -188,17 +188,31 @@ class TpayValidationModuleFrontController extends ModuleFrontController
 
         $this->context->smarty->assign(array(
             'paymentConfig'   => $paymentConfig,
-            'tplDir'          => $tplDir,
             'autoSubmit'      => $autoSubmit,
             'blikOn'          => $blikOn,
             'products'        => $orderProductsDetails,
-            'shippingCost'    => number_format(str_replace(array(',', ' '), array('.', ''),
-                $cart->getTotalShippingCost()), $this->displayPrecision, '.', ''),
+            'shippingCost'    => $cart->getTotalShippingCost(),
             'invAddress'      => $InvAddress,
             'deliveryAddress' => $deliveryAddress,
             'installments'    => $this->installments,
-            'curr'            => $this->context->currency->sign,
         ));
+        $this->assignTemplatesPatches();
+    }
+
+    private function assignTemplatesPatches()
+    {
+        $tplDir = 'modules/tpay/views/templates/front/';
+        $templates = array(
+            'blik',
+            'orderSummary',
+            'paymentBasic',
+        );
+        foreach ($templates as $key) {
+            $this->context->smarty->assign(array(
+                $key . 'Path' => Tools::file_exists_cache(_PS_THEME_DIR_ . $tplDir . $key . '.tpl') ?
+                    _PS_THEME_DIR_ . $tplDir . $key . '.tpl' : _PS_ROOT_DIR_ . '/' . $tplDir . $key . '.tpl',
+            ));
+        }
     }
 
     private function renderCard()
@@ -230,21 +244,6 @@ class TpayValidationModuleFrontController extends ModuleFrontController
          */
         $msg = 'config array ' . nl2br(print_r($this->tpayClientConfig, true)) . "\n";
         $msg .= 'exception ' . nl2br(print_r($exception, true)) . "\n";
-
-        /**
-         * set order status to payment error.
-         */
-        $orderHistory = new OrderHistory();
-
-        $lastOrderState = $orderHistory->getLastOrderState($this->currentOrderId);
-        $lastOrderState = (int)$lastOrderState->id;
-        $targetOrderState = (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?
-            Configuration::get('TPAY_OWN_ERROR') : Configuration::get('TPAY_ERROR');
-        if ($lastOrderState !== $targetOrderState) {
-            $orderHistory->id_order = $this->currentOrderId;
-            $orderHistory->changeIdOrderState($targetOrderState, $this->currentOrderId);
-            $orderHistory->add();
-        }
 
         if ($debug_on) {
             echo '<pre>';

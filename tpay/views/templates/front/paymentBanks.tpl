@@ -51,8 +51,8 @@
         }
     </style>
 
-{include file="$tplDir/orderSummary.tpl"}
-{include file="$tplDir/blik.tpl" paymentConfig=$paymentConfig}
+{include file="$orderSummaryPath"}
+{include file="$blikPath" paymentConfig=$paymentConfig}
 <br/>
 <div class="insidebg" id="insidebg">
     <div>
@@ -66,7 +66,7 @@
             {l s='I do accept' mod='tpay'} <a href="{$paymentConfig.regulation_url|escape:'htmlall':'UTF-8'}" target="_blank">{l s='regulations' mod='tpay'}</a>
         </label>
     {/if}
-    {include file="$tplDir/paymentBasic.tpl" paymentConfig=$paymentConfig}
+    {include file="$paymentBasicPath" paymentConfig=$paymentConfig}
 {literal}
     <script>
         var s = document.createElement('script'),

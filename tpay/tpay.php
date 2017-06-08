@@ -76,7 +76,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.2';
+        $this->version = '1.3.3';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -144,7 +144,6 @@ class Tpay extends PaymentModule
         if (!$this->registerHook('displayPaymentEU')) {
             $this->_errors[] = $this->l('Error adding EU payment');
         }
-
         if (!empty($this->_errors)) {
             return false;
         }
@@ -451,7 +450,7 @@ class Tpay extends PaymentModule
 
             $output .= $this->displayConfirmation($this->l('Settings saved'));
         }
-        include_once (dirname(__FILE__).'/views/templates/admin/configuration.tpl');
+        include_once(dirname(__FILE__) . '/views/templates/admin/configuration.tpl');
         return $output . $this->displayForm();
     }
 
@@ -631,7 +630,7 @@ class Tpay extends PaymentModule
             }
         }
         if ($cardActive === 1 && TpayHelperClient::getCardMidNumber($currency->iso_code,
-                _PS_BASE_URL_ . __PS_BASE_URI__ )
+                _PS_BASE_URL_ . __PS_BASE_URI__)
         ) {
             $paymentLink = $this->context->link->getModuleLink(
                 'tpay',
@@ -672,7 +671,6 @@ class Tpay extends PaymentModule
         return $this->display(__FILE__, 'payment.tpl');
     }
 
-
     /**
      * Hook for displaying tpay logo on product pages.
      *
@@ -691,4 +689,5 @@ class Tpay extends PaymentModule
 
         return $this->display(__FILE__, 'paymentlogo.tpl', $this->getCacheId());
     }
+
 }
