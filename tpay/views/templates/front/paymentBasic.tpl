@@ -84,10 +84,12 @@
     {/literal}
     {if $autoSubmit}{literal}
     jQuery(document).ready(function () {
+        var submitBtn = jQuery('#tpay-form').find('input[type=submit]');
+        submitBtn.css("display", "none");
         setTimeout(function () {
-            jQuery('#tpay-form').find('input[type=submit]').click();
+            submitBtn.click();
         }, 3000);
-        jQuery('#tpay-form').find('input[type=submit]').val("{/literal}{l s='Pay' mod='tpay'}{literal}");
+        submitBtn.val("{/literal}{l s='Pay' mod='tpay'}{literal}");
     });
 
     {/literal}{/if}
