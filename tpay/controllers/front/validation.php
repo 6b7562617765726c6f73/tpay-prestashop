@@ -190,10 +190,10 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'paymentConfig'   => $paymentConfig,
             'autoSubmit'      => $autoSubmit,
             'blikOn'          => $blikOn,
-            'products'        => $orderProductsDetails,
-            'shippingCost'    => $cart->getTotalShippingCost(),
-            'invAddress'      => $InvAddress,
-            'deliveryAddress' => $deliveryAddress,
+            'productsT'        => $orderProductsDetails,
+            'shippingCostT'    => $cart->getTotalShippingCost(),
+            'invAddressT'      => $InvAddress,
+            'deliveryAddressT' => $deliveryAddress,
             'installments'    => $this->installments,
         ));
         $this->assignTemplatesPatches();
