@@ -187,14 +187,14 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $deliveryAddress = new AddressCore($addressDeliveryId);
 
         $this->context->smarty->assign(array(
-            'paymentConfig'   => $paymentConfig,
-            'autoSubmit'      => $autoSubmit,
-            'blikOn'          => $blikOn,
+            'paymentConfig'    => $paymentConfig,
+            'autoSubmit'       => $autoSubmit,
+            'blikOn'           => $blikOn,
             'productsT'        => $orderProductsDetails,
             'shippingCostT'    => $cart->getTotalShippingCost(),
             'invAddressT'      => $InvAddress,
             'deliveryAddressT' => $deliveryAddress,
-            'installments'    => $this->installments,
+            'installments'     => $this->installments,
         ));
         $this->assignTemplatesPatches();
     }
@@ -220,6 +220,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
             _PS_BASE_URL_ . __PS_BASE_URI__);
         $paymentCard = TpayHelperClient::getCardClient($midId);
+        tpay\Lang::setLang($this->context->language->iso_code);
         $this->context->smarty->assign(array(
             'form' => $paymentCard->getDirectCardForm(__PS_BASE_URI__ . 'modules/tpay/lib/',
                 'payment?type=' . TPAY_PAYMENT_CARDS, false)

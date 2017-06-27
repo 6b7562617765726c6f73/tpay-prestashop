@@ -184,7 +184,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         } else {
 
             $tpayBasicClient = TpayHelperClient::getBasicClient();
-            echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig);
+            $this->context->smarty->assign(array('form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig)
+            ));
+            $this->setTemplate('redirect.tpl');
 
         }
     }

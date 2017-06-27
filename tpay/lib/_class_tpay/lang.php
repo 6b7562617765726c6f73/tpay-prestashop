@@ -20,7 +20,7 @@ class Lang
      *
      * @var string
      */
-    private static $lang = 'en';
+    private static $lang = 'pl';
     /**
      * Translation data
      *
@@ -154,7 +154,7 @@ class Lang
         if (isset(static::$data[$lang])) {
             static::$lang = $lang;
         } else {
-            throw new TException('No translation for this language');
+            static::$lang = 'en';
         }
     }
 
