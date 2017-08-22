@@ -93,6 +93,25 @@ return array(
             ),
             array(
                 'type'    => $switch,
+                'label'   => $this->l('Show order summary on checkout page'),
+                'name'    => 'TPAY_SUMMARY',
+                'is_bool' => true,
+                'class'   => 't',
+                'values'  => array(
+                    array(
+                        'id'    => 'tpay_summary_on',
+                        'value' => 1,
+                        'label' => $this->l('Yes'),
+                    ),
+                    array(
+                        'id'    => 'tpay_summary_off',
+                        'value' => 0,
+                        'label' => $this->l('No'),
+                    ),
+                ),
+            ),
+            array(
+                'type'    => $switch,
                 'label'   => $this->l('Surcharge for the use of payment'),
                 'name'    => 'TPAY_SURCHARGE_ACTIVE',
                 'is_bool' => true,

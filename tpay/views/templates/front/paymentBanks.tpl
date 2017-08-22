@@ -51,7 +51,7 @@
         }
     </style>
 
-{include file="$orderSummaryPath"}
+{if $showSummary}{include file="$orderSummaryPath"}{/if}
 {include file="$blikPath" paymentConfig=$paymentConfig}
 <br/>
 <div class="insidebg" id="insidebg">

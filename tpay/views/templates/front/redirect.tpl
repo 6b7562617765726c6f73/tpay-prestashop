@@ -11,7 +11,26 @@
 *  @copyright 2010-2016 tpay.com
 *  @license   LICENSE.txt
 *}
+<style>
+    .loader {
+        width: 210px;
+        height: 246px;
+        animation: spin 2s linear infinite;
+        margin-bottom: 25px;
+    }
 
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
 {assign var='current_step' value='payment'}
 {include file="$tpl_dir./order-steps.tpl"}
+<img src="{$tpay_path|escape:'htmlall':'UTF-8'}/img/loading.png" alt="{l s='Redirecting' mod='tpay'}" class="loader"/>
+<h4>{l s='Please wait... In a moment you will be redirected to secure transaction panel.' mod='tpay'}</h4>
+<h5>{l s='If your browser does not redirect you automatically press the button below.' mod='tpay'}</h5>
 {$form}

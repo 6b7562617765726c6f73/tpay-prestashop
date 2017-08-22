@@ -182,12 +182,12 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         if (Tools::getValue('blikCode') && (is_int((int)(Tools::getValue('blikCode'))))) {
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
-
             $tpayBasicClient = TpayHelperClient::getBasicClient();
-            $this->context->smarty->assign(array('form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig)
+            $this->context->smarty->assign(array(
+                'form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig),
+                'tpay_path'     => _MODULE_DIR_ . 'tpay/views',
             ));
             $this->setTemplate('redirect.tpl');
-
         }
     }
 

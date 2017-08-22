@@ -158,6 +158,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private function assignSmartyData($autoSubmit)
     {
         $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
+        $showSummary = (bool)(int)Configuration::get('TPAY_SUMMARY');
         $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
         $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
         $cart = $this->context->cart;
@@ -189,6 +190,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $this->context->smarty->assign(array(
             'paymentConfig'    => $paymentConfig,
             'autoSubmit'       => $autoSubmit,
+            'showSummary'      => $showSummary,
             'blikOn'           => $blikOn,
             'productsT'        => $orderProductsDetails,
             'shippingCostT'    => $cart->getTotalShippingCost(),

@@ -76,7 +76,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.4';
+        $this->version = '1.3.5';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -314,12 +314,14 @@ class Tpay extends PaymentModule
             $basicActive = (int)Tools::getValue('TPAY_BASIC_ACTIVE');
             $blikActive = (int)Tools::getValue('TPAY_BLIK_ACTIVE');
             $bannerActive = (int)Tools::getValue('TPAY_BANNER');
+            $summaryActive = (int)Tools::getValue('TPAY_SUMMARY');
             $installmentActive = (int)Tools::getValue('TPAY_INSTALLMENTS_ACTIVE');
             $userDefinedStatusesActive = (int)Tools::getValue('TPAY_OWN_STATUS');
             Configuration::updateValue('TPAY_INSTALLMENTS_ACTIVE', $installmentActive);
             Configuration::updateValue('TPAY_BASIC_ACTIVE', $basicActive);
             Configuration::updateValue('TPAY_BLIK_ACTIVE', $blikActive);
             Configuration::updateValue('TPAY_BANNER', $bannerActive);
+            Configuration::updateValue('TPAY_SUMMARY', $summaryActive);
             Configuration::updateValue('TPAY_OWN_STATUS', $userDefinedStatusesActive);
             /**
              * debug option.
