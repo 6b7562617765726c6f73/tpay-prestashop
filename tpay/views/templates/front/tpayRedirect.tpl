@@ -11,6 +11,9 @@
 *  @copyright 2010-2016 tpay.com
 *  @license   LICENSE.txt
 *}
+{assign var='current_step' value='payment'}
+{include file="$tpl_dir./order-steps.tpl"}
+
 <style>
     .loader {
         width: 210px;
@@ -28,9 +31,7 @@
         }
     }
 </style>
-{assign var='current_step' value='payment'}
-{include file="$tpl_dir./order-steps.tpl"}
 <img src="{$tpay_path|escape:'htmlall':'UTF-8'}/img/loading.png" alt="{l s='Redirecting' mod='tpay'}" class="loader"/>
 <h4>{l s='Please wait... In a moment you will be redirected to secure transaction panel.' mod='tpay'}</h4>
 <h5>{l s='If your browser does not redirect you automatically press the button below.' mod='tpay'}</h5>
-{$form}
+{$tpay_form}

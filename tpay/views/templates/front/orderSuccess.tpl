@@ -13,7 +13,7 @@
 *}
 <div id="tpay-success">
     <img src="{$modules_dir|escape:'htmlall':'UTF-8'}tpay/views/img/tpay_logo.png" alt="{l s='tpay logo' mod='tpay'}" width="213" height="51"/>
-    <h4>{l s='Thank you for your order and we invite you to further ' mod='tpay'}<a href="/">{l s='shopping' mod='tpay'}</a></h4>
+    <h4>{l s='Thank you for your order and we invite you to further ' mod='tpay'} <a href="/">{l s='shopping' mod='tpay'}</a></h4>
 </div>
 
 {if isset($google_id)}
@@ -40,7 +40,7 @@
         // add item might be called for every item in the shopping cart
         // where your ecommerce engine loops through each item in the cart and
         // prints out _addItem for each
-        {foreach from=$products item=product name=products}
+        {foreach from=$tpay_products item=product name=products}
 
         ga('ecommerce:addItem', {
             'id': '{$id_order|escape:'htmlall':'UTF-8'}', // Transaction ID. Required

@@ -13,8 +13,6 @@
  * @license   LICENSE.txt
  */
 
-use tpay\Curl;
-
 require_once _PS_MODULE_DIR_ . '/tpay/helpers/TpayHelperClient.php';
 require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
 
@@ -37,6 +35,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        $this->display_column_left = false;
         $cart = $this->context->cart;
         $currency = $this->context->currency;
         $customer = new Customer($cart->id_customer);
@@ -73,7 +72,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
          * Insert order to db
          */
         TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
-        $this->initBasicClient();
+        $this->initBasicClient($orderId);
 
         if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
             $this->processCardPayment($orderId);
@@ -84,7 +83,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     }
 
-    private function initBasicClient()
+    private function initBasicClient($orderId)
     {
         $this->tpayClient = TpayHelperClient::getBasicClient();
         $cart = $this->context->cart;
@@ -93,7 +92,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $this->tpayClientConfig += array(
             'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success'),
+            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success') . '?oid=' . $orderId,
             'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error'),
             'email'               => $this->context->cookie->email,
             'imie'                => $billingAddress->firstname,
@@ -183,11 +182,12 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
             $tpayBasicClient = TpayHelperClient::getBasicClient();
+            $this->setTemplate('tpayRedirect.tpl');
             $this->context->smarty->assign(array(
-                'form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig),
+                'tpay_form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig),
                 'tpay_path'     => _MODULE_DIR_ . 'tpay/views',
+                'HOOK_HEADER'       => Hook::exec('displayHeader'),
             ));
-            $this->setTemplate('redirect.tpl');
         }
     }
 

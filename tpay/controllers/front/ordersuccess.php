@@ -31,17 +31,16 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
         $this->context->cart->id = null;
 
         $googleId = Configuration::get('TPAY_GOOGLE_ID');
-        if (!empty($googleId) && $this->context->cookie->last_order !== false) {
-            $order_id = (int) $this->context->cookie->last_order;
+        $order_id = filter_input(INPUT_GET, 'oid');
+        if (!empty($googleId) && $order_id !== null) {
             $cart = Cart::getCartByOrderId($order_id);
             $order = new Order($order_id);
             $products = $order->getProducts();
-
             $smarty_data = array(
                 'google_id' => $googleId,
                 'total_to_pay' => $cart->getOrderTotal(),
                 'tax' => ($cart->getOrderTotal() - $order->total_paid_tax_excl),
-                'products' => $products,
+                'tpay_products' => $products,
                 'shop' => Configuration::get('PS_SHOP_NAME'),
                 'shipping' => $order->total_shipping,
                 'id_order' => $order_id,
