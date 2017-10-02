@@ -184,16 +184,7 @@ class PaymentBasic
      */
     private function checkServer()
     {
-        if (!isset($_SERVER[static::REMOTE_ADDR])
-            || !in_array($_SERVER[static::REMOTE_ADDR], $this->secureIP)
-        ) {
-            if (!isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-                || !in_array($_SERVER['HTTP_X_FORWARDED_FOR'], $this->secureIP)
-            ) {
-                return false;
-            }
-        }
-        return true;
+        return isset($_SERVER[static::REMOTE_ADDR]) && in_array($_SERVER[static::REMOTE_ADDR], $this->secureIP) ? true : false;
     }
     
     /**
