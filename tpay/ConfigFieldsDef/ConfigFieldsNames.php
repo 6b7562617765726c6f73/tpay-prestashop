@@ -20,6 +20,7 @@ class ConfigFieldsNames
             'TPAY_DEBUG',
             'TPAY_GOOGLE_ID',
             'TPAY_CHECK_IP',
+            'TPAY_CHECK_PROXY',
             'TPAY_SHOW_REGULATIONS',
             'TPAY_SURCHARGE_ACTIVE',
             'TPAY_SURCHARGE_TYPE',

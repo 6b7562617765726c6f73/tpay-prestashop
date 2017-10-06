@@ -1,4 +1,4 @@
-{include file="$orderSummaryPath"}
+{if $showSummary}{include file="$orderSummaryPath"}{/if}
 {$form}
 
 <p class="cart_navigation clearfix" id="cart_navigation">

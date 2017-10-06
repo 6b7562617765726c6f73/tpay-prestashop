@@ -74,6 +74,26 @@ return array(
             ),
             array(
                 'type'    => $switch,
+                'label'   => $this->l('My server use proxy communication'),
+                'desc'     => $this->l('Enable this option only if you are 100% sure!'),
+                'name'    => 'TPAY_CHECK_PROXY',
+                'is_bool' => true,
+                'class'   => 't',
+                'values'  => array(
+                    array(
+                        'id'    => 'tpay_check_proxy_on',
+                        'value' => 1,
+                        'label' => $this->l('Yes'),
+                    ),
+                    array(
+                        'id'    => 'tpay_check_proxy_off',
+                        'value' => 0,
+                        'label' => $this->l('No'),
+                    ),
+                ),
+            ),
+            array(
+                'type'    => $switch,
                 'label'   => $this->l('tpay payments banner on product cards'),
                 'name'    => 'TPAY_BANNER',
                 'is_bool' => true,

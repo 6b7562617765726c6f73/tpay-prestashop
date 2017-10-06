@@ -13,6 +13,9 @@
  * @license   LICENSE.txt
  */
 
+use tpayLibs\src\_class_tpay\Utilities\Util;
+use tpayLibs\src\Dictionaries\FieldsConfigDictionary;
+
 require_once _PS_MODULE_DIR_ . '/tpay/helpers/TpayHelperClient.php';
 require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
 
@@ -25,11 +28,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private $tpayClientConfig;
 
-    private $tpayClient;
-
     private $currentOrderId;
-
-    private $tpayCardClient;
 
     private $tpayPaymentId;
 
@@ -80,12 +79,10 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $this->redirectToPayment();
         }
 
-
     }
 
     private function initBasicClient($orderId)
     {
-        $this->tpayClient = TpayHelperClient::getBasicClient();
         $cart = $this->context->cart;
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
@@ -116,19 +113,30 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     {
         $midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
             _PS_BASE_URL_ . __PS_BASE_URI__);
-        $this->tpayCardClient = TpayHelperClient::getCardClient($midId);
+        $tpayCardClient = TpayHelperClient::getCardClient($midId);
 
-        $response = $this->tpayCardClient->secureSale($this->tpayClientConfig['kwota'],
-            $midId . '*tpay*' . $this->tpayClientConfig['crc'],
-            $this->tpayClientConfig['opis'],
-            $this->context->currency->iso_code_num, true, $this->context->language->iso_code,
-            $this->tpayClientConfig['pow_url'],
-            $this->tpayClientConfig['pow_url_blad']);
+        $cardData = Util::post('carddata', FieldsConfigDictionary::STRING);
+        $clientName = $this->tpayClientConfig['nazwisko'];
+        $clientEmail = $this->tpayClientConfig['email'];
+        $saveCard = Util::post('card_save', FieldsConfigDictionary::STRING);
+        Util::log('Secure Sale post params', print_r($_POST, true));
+        if ($saveCard === 'on') {
+            $tpayCardClient->setOneTimer(false);
+        }
+
+        $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])
+            ->setCurrency($this->context->currency->iso_code_num)
+            ->setOrderID($midId . '*tpay*' . $this->tpayClientConfig['crc']);
+        $tpayCardClient->setLanguage($this->context->language->iso_code)
+            ->setReturnUrls($this->tpayClientConfig['pow_url'], $this->tpayClientConfig['pow_url_blad']);
+        $response = $tpayCardClient->registerSale($clientName, $clientEmail, $this->tpayClientConfig['opis'],
+            $cardData);
+
         if (isset($response['result']) && (int)$response['result'] === 1) {
 
-            $this->tpayCardClient->validateSign($response['sign'], $response['sale_auth'], $response['card'],
-                $this->tpayClientConfig['kwota'], $response['date'], 'correct', $this->context->currency->iso_code_num,
-                isset($response['test_mode']) ? '1' : '', '', '');
+            $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])->setOrderID('')
+                ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
+                $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
             $this->tpayPaymentId = $response['sale_auth'];
             $this->setOrderAsConfirmed($orderId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
@@ -144,6 +152,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             }
         }
     }
+
 
     /**
      * Update order status.
@@ -168,11 +177,13 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->add();
         }
-        $order = new Order($orderId);
-        $payment = $order->getOrderPaymentCollection();
-        $payments = $payment->getAll();
-        $payments[0]->transaction_id = $this->tpayPaymentId;
-        $payments[0]->update();
+        if (!$error) {
+            $order = new Order($orderId);
+            $payment = $order->getOrderPaymentCollection();
+            $payments = $payment->getAll();
+            $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
+            $payments[$payment->count() - 1]->update();
+        }
     }
 
     private function redirectToPayment()
@@ -184,9 +195,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $tpayBasicClient = TpayHelperClient::getBasicClient();
             $this->setTemplate('tpayRedirect.tpl');
             $this->context->smarty->assign(array(
-                'tpay_form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig),
-                'tpay_path'     => _MODULE_DIR_ . 'tpay/views',
-                'HOOK_HEADER'       => Hook::exec('displayHeader'),
+                'tpay_form'   => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
+                'tpay_path'   => _MODULE_DIR_ . 'tpay/views',
+                'HOOK_HEADER' => Hook::exec('displayHeader'),
             ));
         }
     }

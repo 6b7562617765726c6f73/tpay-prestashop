@@ -67,6 +67,7 @@ class Tpay extends PaymentModule
     const SURCHARGE_ACTIVE = 'TPAY_SURCHARGE_ACTIVE';
     const SURCHARGE_TYPE = 'TPAY_SURCHARGE_TYPE';
     const SURCHARGE_VALUE = 'TPAY_SURCHARGE_VALUE';
+    const CHECK_PROXY = 'TPAY_CHECK_PROXY';
     const SUBMIT = 'submit';
 
     /**
@@ -76,7 +77,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.3.7';
+        $this->version = '1.4.0';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.5', 'max' => _PS_VERSION_);
@@ -149,6 +150,7 @@ class Tpay extends PaymentModule
         }
 
         Configuration::updateValue('TPAY_CHECK_IP', 1);
+        Configuration::updateValue('TPAY_CHECK_PROXY', 0);
 
         return true;
     }
@@ -331,11 +333,12 @@ class Tpay extends PaymentModule
             $debug = (int)Tools::getValue('TPAY_CARD_DEBUG');
             Configuration::updateValue('TPAY_CARD_DEBUG', $debug);
             /**
-             * debug option.
+             * Notifications options.
              */
             $checkIp = (int)Tools::getValue('TPAY_CHECK_IP');
             Configuration::updateValue('TPAY_CHECK_IP', $checkIp);
-
+            $checkProxy = (int)Tools::getValue(static::CHECK_PROXY);
+            Configuration::updateValue(static::CHECK_PROXY, $checkProxy);
             /**
              * google analytics.
              */

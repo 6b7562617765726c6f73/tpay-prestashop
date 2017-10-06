@@ -13,6 +13,7 @@
  * @copyright 2010-2016 tpay.com
  * @license   LICENSE.txt
  */
+use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * include tpay client and model functions.
@@ -28,6 +29,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     private $tpayClient = false;
     private $paymentType = false;
     private $tpayPaymentId;
+
     /**
      * Hook header for confirmation processing.
      *
@@ -58,8 +60,8 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
 
     private function initBasicClient()
     {
-        $this->tpayClient = TpayHelperClient::getBasicClient();
-        $checkIp = (bool)(int)Configuration::get('TPAY_CHECK_IP');
+        $this->tpayClient = TpayHelperClient::getBasicValidator();
+        $checkIp = (bool)Configuration::get('TPAY_CHECK_IP');
         if (!$checkIp) {
             $this->tpayClient->disableValidationServerIP();
         }
@@ -74,23 +76,11 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     {
         try {
 
-            $orderRes = $this->tpayClient->checkPayment($this->paymentType);
+            $orderRes = $this->tpayClient->setTransactionID($_POST['tr_id'])
+                ->checkPayment($this->paymentType);
             $this->tpayPaymentId = $orderRes['tr_id'];
             $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
             $orderId = (int)$orderData['tj_order_id'];
-            $surcharge = (float)$orderData['tj_surcharge'];
-            $order = new Order($orderId);
-
-            $orderTotal = round((float)$order->total_paid + $surcharge, 2);
-            $orderTotal = number_format($orderTotal, 2, '.', '');
-
-            $this->tpayClient->validateSign(
-                $orderRes['md5sum'],
-                $orderRes['tr_id'],
-                $orderTotal,
-                $orderRes['tr_crc']
-            );
-
 
             if ($orderId === 0) {
                 return false;
@@ -137,7 +127,6 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $targetOrderState = !$error ? (int)Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
         }
 
-
         if ($lastOrderState !== $targetOrderState) {
             $orderHistory->id_order = $orderId;
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
@@ -148,15 +137,20 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
         $payments = $payment->getAll();
         $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
         $payments[$payment->count() - 1]->update();
+
     }
 
     private function initCardClient()
     {
         $midId = explode('*tpay*', Tools::getValue('order_id'));
-        $this->tpayClient = TpayHelperClient::getCardClient($midId[0]);
+        $this->tpayClient = TpayHelperClient::getCardValidator($midId[0]);
         $checkIp = (bool)(int)Configuration::get('TPAY_CHECK_IP');
+        $checkProxy = (bool)(int)Configuration::get('TPAY_CHECK_PROXY');
         if (!$checkIp) {
             $this->tpayClient->disableValidationServerIP();
+        }
+        if ($checkProxy) {
+            $this->tpayClient->enableForwardedIPValidation();
         }
     }
 
@@ -180,11 +174,11 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $orderTotal = round((float)$order->total_paid + $surcharge, 2);
             $orderTotal = number_format($orderTotal, 2, '.', '');
 
-            $this->tpayClient->validateSign($orderRes['sign'],
-                $orderRes['sale_auth'], $orderRes['card'], (double)$orderTotal,
-                $orderRes['date'], 'correct', $currency['iso_code_num'], isset($orderRes['test_mode']) ? '1' : '',
-                $orderRes['order_id']);
-
+            $this->tpayClient->setAmount((double)$orderTotal)
+                ->setCurrency($currency['iso_code_num'])
+                ->setOrderID($orderRes['order_id'])
+                ->validateCardSign($orderRes['sign'], $orderRes['sale_auth'], $orderRes['card'],
+                    $orderRes['date'], 'correct', isset($orderRes['test_mode']) ? '1' : '');
             if ($orderId === 0) {
                 return false;
             }

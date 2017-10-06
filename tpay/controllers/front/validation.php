@@ -12,6 +12,7 @@
  * @copyright 2010-2016 tpay.com
  * @license   LICENSE.txt
  */
+use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * include tpay client.
@@ -222,10 +223,13 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
             _PS_BASE_URL_ . __PS_BASE_URI__);
         $paymentCard = TpayHelperClient::getCardClient($midId);
-        tpay\Lang::setLang($this->context->language->iso_code);
+        $language = $this->context->language->iso_code;
+        if ($language !== 'pl') {
+            $language = 'en';
+        }
+        (new Util)->setLanguage($language)->setPath(__PS_BASE_URI__ . 'modules/tpay/tpayLibs/src/');
         $this->context->smarty->assign(array(
-            'form' => $paymentCard->getDirectCardForm(__PS_BASE_URI__ . 'modules/tpay/lib/',
-                'payment?type=' . TPAY_PAYMENT_CARDS, false)
+            'form' => $paymentCard->getOnSiteCardForm('payment?type=' . TPAY_PAYMENT_CARDS, false)
         ));
         $this->setTemplate('paymentCard.tpl');
         $this->assignSmartyData(false);

@@ -13,9 +13,13 @@
  * @license   LICENSE.txt
  */
 
-require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/PaymentBasic.php';
-require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/PaymentCard.php';
-require_once _PS_MODULE_DIR_ . 'tpay/lib/_class_tpay/TransactionApi.php';
+use tpayLibs\examples\BlikExample;
+use tpayLibs\examples\CardBasicForm;
+use tpayLibs\examples\CardNotification;
+use tpayLibs\examples\TpayBasicExample;
+use tpayLibs\examples\TransactionNotification;
+
+require_once _PS_MODULE_DIR_ . 'tpay/tpayLibs/examples/loader.php';
 
 /**
  * Class TpayHelperClient.
@@ -25,20 +29,31 @@ class TpayHelperClient extends Helper
     /**
      * Returns basic tpay client.
      *
-     * @return \Tpay\PaymentBasic
+     * @return TpayBasicExample
      */
     public static function getBasicClient()
     {
         $merchantId = (int)Configuration::get('TPAY_ID');
         $merchantSecret = Configuration::get('TPAY_KEY');
 
-        return new \Tpay\PaymentBasic($merchantId, $merchantSecret);
+        return new TpayBasicExample($merchantId, $merchantSecret);
     }
+    /**
+     * Returns basic tpay client.
+     *
+     * @return TransactionNotification
+     */
+    public static function getBasicValidator()
+    {
+        $merchantId = (int)Configuration::get('TPAY_ID');
+        $merchantSecret = Configuration::get('TPAY_KEY');
 
+        return new TransactionNotification($merchantId, $merchantSecret);
+    }
     /**
      * Returns transaction api tpay client.
      *
-     * @return \Tpay\TransactionAPI
+     * @return BlikExample
      */
     public static function getApiClient()
     {
@@ -47,14 +62,14 @@ class TpayHelperClient extends Helper
         $apiKey = Configuration::get('TPAY_APIKEY');
         $apiPass = Configuration::get('TPAY_APIPASS');
 
-        return new \Tpay\TransactionAPI($apiKey, $apiPass, $merchantId, $merchantSecret);
+        return new BlikExample($apiKey, $apiPass, $merchantId, $merchantSecret);
     }
 
     /**
      * Returns card tpay client.
      *
      * @param $midId
-     * @return \Tpay\PaymentCard
+     * @return CardBasicForm
      */
     public static function getCardClient($midId)
     {
@@ -64,7 +79,18 @@ class TpayHelperClient extends Helper
         $hashType = Configuration::get('TPAY_CARD_HASH' . $midId);
         $keyRSA = Configuration::get('TPAY_CARD_RSA' . $midId);
 
-        return new \Tpay\PaymentCard($apiKey, $apiPass, $verificationCode, $hashType, $keyRSA);
+        return new CardBasicForm($apiKey, $apiPass, $verificationCode, $hashType, $keyRSA);
+    }
+
+    public static function getCardValidator($midId)
+    {
+        $apiKey = Configuration::get('TPAY_CARD_KEY' . $midId);
+        $apiPass = Configuration::get('TPAY_CARD_PASS' . $midId);
+        $verificationCode = Configuration::get('TPAY_CARD_CODE' . $midId);
+        $hashType = Configuration::get('TPAY_CARD_HASH' . $midId);
+        $keyRSA = Configuration::get('TPAY_CARD_RSA' . $midId);
+
+        return new CardNotification($apiKey, $apiPass, $verificationCode, $hashType, $keyRSA);
     }
 
     public static function getCardMidNumber($currency, $domain)
