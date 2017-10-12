@@ -71,8 +71,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
          * Insert order to db
          */
         TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
-        $this->initBasicClient($orderId);
-
+        $this->initBasicClient();
+        $this->context->cookie->last_order = $orderId;
         if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
             $this->processCardPayment($orderId);
         } else {
@@ -81,7 +81,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     }
 
-    private function initBasicClient($orderId)
+    private function initBasicClient()
     {
         $cart = $this->context->cart;
         $addressInvoiceId = $cart->id_address_invoice;
@@ -89,7 +89,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $this->tpayClientConfig += array(
             'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success') . '?oid=' . $orderId,
+            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success'),
             'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error'),
             'email'               => $this->context->cookie->email,
             'imie'                => $billingAddress->firstname,
@@ -105,6 +105,11 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         );
         if ((int)Tools::getValue('channel') > 0) {
             $this->tpayClientConfig += array('kanal' => (int)Tools::getValue('channel'));
+        }
+        foreach ($this->tpayClientConfig as $key => $value) {
+            if (empty($value)) {
+                unset($this->tpayClientConfig[$key]);
+            }
         }
 
     }

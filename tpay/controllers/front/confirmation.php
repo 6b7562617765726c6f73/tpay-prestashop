@@ -75,9 +75,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     private function confirmPaymentBasic()
     {
         try {
-
-            $orderRes = $this->tpayClient->setTransactionID($_POST['tr_id'])
-                ->checkPayment($this->paymentType);
+            $orderRes = $this->tpayClient->checkPayment($this->paymentType);
             $this->tpayPaymentId = $orderRes['tr_id'];
             $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
             $orderId = (int)$orderData['tj_order_id'];

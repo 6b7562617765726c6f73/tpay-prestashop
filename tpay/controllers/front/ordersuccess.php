@@ -31,8 +31,9 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
         $this->context->cart->id = null;
 
         $googleId = Configuration::get('TPAY_GOOGLE_ID');
-        $order_id = filter_input(INPUT_GET, 'oid');
-        if (!empty($googleId) && $order_id !== null) {
+        if (!empty($googleId) && $this->context->cookie->last_order !== false) {
+            $order_id = (int)$this->context->cookie->last_order;
+
             $cart = Cart::getCartByOrderId($order_id);
             $order = new Order($order_id);
             $products = $order->getProducts();
