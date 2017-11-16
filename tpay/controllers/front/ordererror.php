@@ -8,9 +8,9 @@
  *
  * You must not modify, adapt or create derivative works of this source code
  *
- *  @author    tpay.com
- *  @copyright 2010-2016 tpay.com
- *  @license   LICENSE.txt
+ * @author    tpay.com
+ * @copyright 2010-2016 tpay.com
+ * @license   LICENSE.txt
  */
 
 /**
@@ -24,9 +24,17 @@ class TpayOrderErrorModuleFrontController extends ModuleFrontController
         $this->context->cookie->__unset('last_order');
         $this->context->cookie->last_order = false;
         $this->cartId = 0;
-        $this->context->controller->addCss(_MODULE_DIR_.'tpay/views/css/style.css');
+        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
         $this->display_column_left = false;
+        $googleId = Configuration::get('TPAY_GOOGLE_ID');
 
+        if (!empty($googleId)) {
+            $smarty_data = array(
+                'google_id' => $googleId,
+                'linker'    => '{\'allowLinker\': true}'
+            );
+            $this->context->smarty->assign($smarty_data);
+        }
 
         parent::initContent();
         $this->setTemplate('orderError.tpl');
