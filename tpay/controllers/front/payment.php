@@ -61,7 +61,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             false,
             $customer->secure_key
         );
-        $orderId = OrderCore::getOrderByCartId($cart->id);
+        $orderId = $this->module->currentOrder;
         $this->currentOrderId = $orderId;
         $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
@@ -89,8 +89,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $this->tpayClientConfig += array(
             'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success'),
-            'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error'),
+            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success') . '?utm_nooverride=1',
+            'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error') . '?utm_nooverride=1',
             'email'               => $this->context->cookie->email,
             'imie'                => $billingAddress->firstname,
             'nazwisko'            => $billingAddress->lastname,

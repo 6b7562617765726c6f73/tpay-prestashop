@@ -25,7 +25,9 @@
                 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
         })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
         {/literal}
-        ga('create', '{$google_id|escape:'htmlall':'UTF-8'}', 'auto');
+        ga('create', '{$google_id|escape:'htmlall':'UTF-8'}', 'auto', {$linker});
+        ga('require', 'linker');
+        ga('linker:autoLink', ['secure.tpay.com'] );
 
         ga('send', 'pageview');
         ga('require', 'ecommerce', 'ecommerce.js');

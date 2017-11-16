@@ -31,9 +31,9 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
         $this->context->cart->id = null;
 
         $googleId = Configuration::get('TPAY_GOOGLE_ID');
+
         if (!empty($googleId) && $this->context->cookie->last_order !== false) {
             $order_id = (int)$this->context->cookie->last_order;
-
             $cart = Cart::getCartByOrderId($order_id);
             $order = new Order($order_id);
             $products = $order->getProducts();
@@ -46,9 +46,11 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
                 'shipping' => $order->total_shipping,
                 'id_order' => $order_id,
                 'order' => $order,
+                'linker' => '{\'allowLinker\': true}'
             );
 
             $this->context->smarty->assign($smarty_data);
+
         }
         $this->context->smarty->assign(array('modules_dir' => _MODULE_DIR_));
         $this->context->cookie->last_order = false;

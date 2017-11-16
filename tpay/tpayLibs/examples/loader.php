@@ -12,7 +12,7 @@ spl_autoload_register(function ($class) {
     $prefix = 'tpayLibs\\';
 
     // base directory for the namespace prefix
-    $base_dir = __DIR__ . '/../';
+    $base_dir = _PS_MODULE_DIR_ . 'tpay/tpayLibs/';
 
     // does the class use the namespace prefix?
     $len = strlen($prefix);
@@ -31,7 +31,7 @@ spl_autoload_register(function ($class) {
 
     // if the file exists, require it
 
-    if (file_exists($file)) {
+//    if (file_exists($file)) {
         require $file;
-    }
+//    }
 });
