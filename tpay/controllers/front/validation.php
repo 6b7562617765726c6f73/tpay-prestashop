@@ -29,54 +29,84 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private $paymentType = false;
     private $installments = false;
     private $displayPrecision;
+    private $Util;
 
     public function postProcess()
     {
         $this->displayPrecision = (int)Configuration::get('PS_PRICE_DISPLAY_PRECISION');
         $this->display_column_left = false;
-        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
+        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style2.css');
         $cart = $this->context->cart;
         $customer = new Customer($cart->id_customer);
         $paymentType = Tools::getValue('type');
         $errorRedirectLink = $this->context->link->getPageLink('order', true, null, 'step=3');
+        $this->context->smarty->assign(array(
+            'Tpay_PS17' => TPAY_PS_17,
+        ));
+        $this->checkForErrors($cart, $errorRedirectLink, $customer, $paymentType);
+        if ($paymentType === TPAY_PAYMENT_INSTALLMENTS) {
+            $this->installments = true;
+        }
+        $this->paymentType = $paymentType;
+        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
+        $this->checkIfSurcharge($orderTotal);
+        $language = $this->context->language->iso_code === 'pl' ? 'pl' : 'en';
+        $this->Util = (new Util)->setLanguage($language)->setPath(_MODULE_DIR_ . 'tpay/tpayLibs/src/');
+        try {
+            if ($paymentType === TPAY_PAYMENT_BASIC || $paymentType === TPAY_PAYMENT_INSTALLMENTS) {
+                $this->renderBasic();
+            } elseif ($paymentType === TPAY_PAYMENT_CARDS) {
+                $this->renderCard();
+            } elseif ($paymentType === TPAY_PAYMENT_BLIK) {
+                $this->renderBlik();
+            }
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
 
-        /*
-         * check for basic fields
-         */
+    /**
+     * @param $cart
+     * @param $errorRedirectLink
+     * @param $customer
+     * @param $paymentType
+     */
+    private function checkForErrors($cart, $errorRedirectLink, $customer, $paymentType)
+    {
         if (
-            $cart->id_customer == 0
-            ||
-            $cart->id_address_delivery == 0
-            ||
-            $cart->id_address_invoice == 0
-            ||
-            !$this->module->active
+            $cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0
+            || !$this->module->active
         ) {
             Tools::redirect($errorRedirectLink);
         }
 
-        /*
-         * is customer loaded
-         */
         if (!Validate::isLoadedObject($customer)) {
             Tools::redirect($errorRedirectLink);
         }
 
-        /*
-         * is valid payment type
-         */
         if (!in_array($paymentType, array(
             TPAY_PAYMENT_BASIC,
             TPAY_PAYMENT_INSTALLMENTS,
             TPAY_PAYMENT_CARDS,
+            TPAY_PAYMENT_BLIK,
         ))
         ) {
             Tools::redirect($errorRedirectLink);
         }
-        /*
-         * is payment active
-         */
+
+        $this->isPaymentMethodActive($paymentType, $errorRedirectLink);
+    }
+
+    /**
+     * @param $paymentType
+     * @param $errorRedirectLink
+     */
+    private function isPaymentMethodActive($paymentType, $errorRedirectLink)
+    {
         if (($paymentType === TPAY_PAYMENT_BASIC) && (int)Configuration::get('TPAY_BASIC_ACTIVE') !== 1) {
+            Tools::redirect($errorRedirectLink);
+        }
+        if (($paymentType === TPAY_PAYMENT_BLIK) && (int)Configuration::get('TPAY_BLIK_ACTIVE') !== 1) {
             Tools::redirect($errorRedirectLink);
         }
         if (($paymentType === TPAY_PAYMENT_CARDS) && (int)Configuration::get('TPAY_CARD_ACTIVE') !== 1) {
@@ -85,84 +115,68 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         if (($paymentType === TPAY_PAYMENT_INSTALLMENTS) && (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE') !== 1) {
             Tools::redirect($errorRedirectLink);
         }
-        if ($paymentType === TPAY_PAYMENT_INSTALLMENTS) {
-            $this->installments = true;
-        }
-        $this->paymentType = $paymentType;
-        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
+    }
+
+    /**
+     * @param $orderTotal
+     */
+    private function checkIfSurcharge($orderTotal)
+    {
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
         if (!empty($surcharge)) {
             $orderTotal += $surcharge;
             $this->context->smarty->assign(array(
-                'surcharge' => $surcharge,
+                'surcharge' => number_format(str_replace(array(',', ' '), array('.', ''), $surcharge),
+                    $this->displayPrecision, '.', ''),
             ));
         }
         $this->context->smarty->assign(array(
-            'orderTotal' => $orderTotal,
-
+            'orderTotal' => number_format(str_replace(array(',', ' '), array('.', ''), $orderTotal),
+                $this->displayPrecision, '.', ''),
         ));
-
-        try {
-            if ($paymentType === TPAY_PAYMENT_BASIC || $paymentType === TPAY_PAYMENT_INSTALLMENTS) {
-                $this->renderBasic();
-            } else {
-                $this->renderCard();
-            }
-
-        } catch (Exception $e) {
-            $this->handleException($e);
-        }
     }
 
-    /**
-     * Finalize basic tpay payment.
-     */
     private function renderBasic()
     {
         $paymentViewType = (int)Configuration::get('TPAY_BANK_ON_SHOP');
-
         $showRegulations = (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS');
-
-        $autoSubmit = false;
-
-        if ($this->installments) {
-            $autoSubmit = true;
-            $this->setTemplate('paymentBasic.tpl');
+        $this->context->smarty->assign(array('showRegulations' => $showRegulations));
+        $this->setTpayTemplate();
+        if ($this->installments || $paymentViewType === TPAY_VIEW_REDIRECT) {
+            $form = $this->getRedirectionForm($showRegulations);
         } else {
-            switch ($paymentViewType) {
-                case TPAY_VIEW_REDIRECT:
-                    $autoSubmit = true;
-                    $this->setTemplate('paymentBasic.tpl');
-                    break;
-                case TPAY_VIEW_ICONS:
-                    $this->context->smarty->assign(array(
-                        'showRegulations' => $showRegulations,
-                    ));
-                    $this->setTemplate('paymentBanks.tpl');
-                    break;
-                case TPAY_VIEW_LIST:
-                    $this->context->smarty->assign(array('showRegulations' => $showRegulations));
-                    $this->setTemplate('paymentBanksList.tpl');
-                    break;
-                default:
-                    $autoSubmit = true;
-                    $this->setTemplate('paymentBasic.tpl');
-                    break;
-            }
-
+            $form = $this->getBankForm($paymentViewType === TPAY_VIEW_LIST, $showRegulations);
         }
-        $this->assignSmartyData($autoSubmit);
-
+        $this->assignSmartyData($form, 'payment.tpl');
     }
 
+    private function setTpayTemplate()
+    {
+        TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH . '/payment17.tpl') : $this->setTemplate('payment.tpl');
+    }
 
-    private function assignSmartyData($autoSubmit)
+    private function getRedirectionForm($showRegulations)
+    {
+        $formProvider = TpayHelperClient::getBasicClient();
+        return $formProvider->getTransactionForm([], false, 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS, true,
+            $showRegulations);
+    }
+
+    private function getBankForm($smallList = false, $regulations = true)
+    {
+        $formProvider = TpayHelperClient::getBasicClient();
+        return $formProvider->getBankSelectionForm([], $smallList, $regulations, 'payment?type=' . TPAY_PAYMENT_BASIC);
+    }
+
+    private function assignSmartyData($paymentForm, $nextTpl = null)
     {
         $blikOn = (bool)(int)Configuration::get('TPAY_BLIK_ACTIVE');
         $showSummary = (bool)(int)Configuration::get('TPAY_SUMMARY');
         $paymentConfig['merchant_id'] = (int)Configuration::get('TPAY_ID');
         $paymentConfig['regulation_url'] = 'https://secure.tpay.com/partner/pliki/regulamin.pdf';
         $cart = $this->context->cart;
+        $tplDir = TPAY_PS_17 ? _PS_MODULE_DIR_ . 'tpay/views/templates/front/' :
+            _PS_MODULE_DIR_ . 'tpay/views/templates/front';
         $productsVariables = array(
             'name',
             'price_wt',
@@ -177,12 +191,12 @@ class TpayValidationModuleFrontController extends ModuleFrontController
                 if (in_array($key, $productsVariables)) {
                     $orderProductsDetails[$i][array_search($key,
                         $productsVariables)] = ($key === 'price_wt' || $key === 'total_wt') ?
-                        number_format($value, $this->displayPrecision) : $value;
+                        number_format(str_replace(array(',', ' '), array('.', ''), $value), $this->displayPrecision,
+                            '.', '') : $value;
                 }
             }
             ksort($orderProductsDetails[$i]);
         }
-
         $addressDeliveryId = $cart->id_address_delivery;
         $addressInvoiceId = $cart->id_address_invoice;
         $InvAddress = new AddressCore($addressInvoiceId);
@@ -190,7 +204,6 @@ class TpayValidationModuleFrontController extends ModuleFrontController
 
         $this->context->smarty->assign(array(
             'paymentConfig'    => $paymentConfig,
-            'autoSubmit'       => $autoSubmit,
             'showSummary'      => $showSummary,
             'blikOn'           => $blikOn,
             'productsT'        => $orderProductsDetails,
@@ -198,6 +211,10 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'invAddressT'      => $InvAddress,
             'deliveryAddressT' => $deliveryAddress,
             'installments'     => $this->installments,
+            'tplDir'           => $tplDir,
+            'products'         => $orderProductsDetails,
+            'nextTpl'          => $nextTpl,
+            'paymentForm'      => $paymentForm,
         ));
         $this->assignTemplatesPatches();
     }
@@ -206,9 +223,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     {
         $tplDir = 'modules/tpay/views/templates/front/';
         $templates = array(
-            'blik',
             'orderSummary',
-            'paymentBasic',
         );
         foreach ($templates as $key) {
             $this->context->smarty->assign(array(
@@ -228,11 +243,22 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             $language = 'en';
         }
         (new Util)->setLanguage($language)->setPath(__PS_BASE_URI__ . 'modules/tpay/tpayLibs/src/');
-        $this->context->smarty->assign(array(
-            'form' => $paymentCard->getOnSiteCardForm('payment?type=' . TPAY_PAYMENT_CARDS, false)
-        ));
-        $this->setTemplate('paymentCard.tpl');
-        $this->assignSmartyData(false);
+        $form = $paymentCard->getOnSiteCardForm('payment?type=' . TPAY_PAYMENT_CARDS, false);
+        $this->setTpayTemplate();
+        $this->assignSmartyData($form, 'payment.tpl');
+    }
+
+    private function renderBlik()
+    {
+        $this->setTpayTemplate();
+        $form = $this->getBlikForm();
+        $this->assignSmartyData($form, 'payment.tpl');
+    }
+
+    private function getBlikForm()
+    {
+        $formProvider = TpayHelperClient::getBasicClient();
+        return $formProvider->getBlikBasicForm('payment?type=basic');
     }
 
     /**

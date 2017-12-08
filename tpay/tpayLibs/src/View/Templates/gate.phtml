@@ -54,15 +54,19 @@ echo $data[STATIC_FILES_URL] ?>View/Styles/gate.css"/>
              style="vertical-align: middle;"/>&nbsp;&nbsp;<?php $lang->l('processing') ?>
     </div>
 </form>
+<input type="hidden" style="display: none" id="tpayRSA" value="<?php echo $data['rsa_key'] ?>">
+<div class="regulations" style="padding-top: 20px; margin-bottom: 20px">
+    <input id="tpay-accept-regulations-checkbox" type="checkbox" name="regulations" value="0">
+    <label for="tpay-accept-regulations-checkbox" id="regulations-label">
+        <?php $lang->l('accept') ?> <a href="<?php echo $data['regulation_url'] ?>"
+                                       target="_blank"><?php $lang->l('regulations_url') ?></a>
+        <?php $lang->l('regulations'); ?>
+    </label>
+</div>
+
 <button id="continue_btn">&nbsp;<?php $lang->l('card_payment') ?>&nbsp;</button>
-
-<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jquery.formance.min.js"></script>
-<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/cardPayment.js"></script>
+<?php if (TPAY_PS_17) { ?><script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jquery.min.js"></script> <?php } ?>
 <script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jsencrypt.min.js"></script>
+<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jquery.formance.min.js"></script>
 <script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/string_routines.js"></script>
-
-<script type="text/javascript">
-    $(document).ready(function () {
-        new CardPayment('<?php echo $data['payment_redirect_path'] ?>', "<?php echo $data['rsa_key'] ?>");
-    });
-</script>
+<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/cardPayment.js?12"></script>

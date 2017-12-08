@@ -18,6 +18,7 @@ class Polish
         'merchant_info' => 'Dane sprzedawcy',
         'amount'        => 'Kwota',
         'order'         => 'Zamówienie',
+        'redirect_info' => 'Zostaniesz automatycznie przekierowany do serwisu szybkich płatności online tpay.com',
         // BLIK
         'blik_info'              => 'Wpisz 6 cyfrowy kod i naciśnij "Kupuję i płacę" aby powiązać transakcję blik.',
         'blik_info2'             => 'Jeśli chcesz dokonać tradycyjnej płatności, pozostaw to pole puste.',

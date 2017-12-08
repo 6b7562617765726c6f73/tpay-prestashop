@@ -13,6 +13,6 @@
 *}
 <div class="box-security" style="padding-top: 6px">
         <a href="https://tpay.com/jak-to-dziala" target="_blank">
-        <img src="{$banner_img|escape:'htmlall':'UTF-8'}" alt="{l s='tpay payment' mod='tpay'}" width="213" height="51" class="img-responsive" style="margin: 5px auto">
+        <img src="{$banner_img|escape:'htmlall':'UTF-8'}" alt="{l s='tpay payment' mod='tpay'}" class="img-responsive" style="margin: 5px auto">
         </a>
 </div>

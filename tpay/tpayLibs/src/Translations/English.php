@@ -18,6 +18,7 @@ class English
         'merchant_info' => 'Merchant info',
         'amount'        => 'Amount',
         'order'         => 'Order',
+        'redirect_info' => 'You will be redirected to fast online payments system tpay.com',
         // BLIK
 
         'blik_info'              => 'Type in 6 digit code and press pay to commit blik payment.',

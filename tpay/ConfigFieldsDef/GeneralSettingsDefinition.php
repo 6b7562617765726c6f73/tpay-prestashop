@@ -4,7 +4,7 @@
  * Date: 26.05.2017
  * Time: 17:31
  */
-return array(
+$settings = array(
     'form' => array(
         'legend' => array(
             'title' => $this->l('Basic settings'),
@@ -46,14 +46,6 @@ return array(
                 'desc'    => '<b>' . $this->l('WARNING') . '</b>' . $this->l(' turn off in production mode'),
             ),
             array(
-                'type'     => 'text',
-                'label'    => $this->l('Google analytics code'),
-                'name'     => 'TPAY_GOOGLE_ID',
-                'size'     => 50,
-                'required' => false,
-                'desc'     => $this->l('Complement this box will allow the module to send statistics'),
-            ),
-            array(
                 'type'    => $switch,
                 'label'   => $this->l('Check the IP address for notification server'),
                 'name'    => 'TPAY_CHECK_IP',
@@ -75,7 +67,7 @@ return array(
             array(
                 'type'    => $switch,
                 'label'   => $this->l('My server use proxy communication'),
-                'desc'     => $this->l('Enable this option only if you are 100% sure!'),
+                'desc'    => $this->l('Enable this option only if you are 100% sure!'),
                 'name'    => 'TPAY_CHECK_PROXY',
                 'is_bool' => true,
                 'class'   => 't',
@@ -111,25 +103,7 @@ return array(
                     ),
                 ),
             ),
-            array(
-                'type'    => $switch,
-                'label'   => $this->l('Show order summary on checkout page'),
-                'name'    => 'TPAY_SUMMARY',
-                'is_bool' => true,
-                'class'   => 't',
-                'values'  => array(
-                    array(
-                        'id'    => 'tpay_summary_on',
-                        'value' => 1,
-                        'label' => $this->l('Yes'),
-                    ),
-                    array(
-                        'id'    => 'tpay_summary_off',
-                        'value' => 0,
-                        'label' => $this->l('No'),
-                    ),
-                ),
-            ),
+
             array(
                 'type'    => $switch,
                 'label'   => $this->l('Surcharge for the use of payment'),
@@ -231,3 +205,29 @@ return array(
         ),
     ),
 );
+
+$summarySetting = array(
+    'type'    => $switch,
+    'label'   => $this->l('Show order summary on checkout page'),
+    'name'    => 'TPAY_SUMMARY',
+    'is_bool' => true,
+    'class'   => 't',
+    'values'  => array(
+        array(
+            'id'    => 'tpay_summary_on',
+            'value' => 1,
+            'label' => $this->l('Yes'),
+        ),
+        array(
+            'id'    => 'tpay_summary_off',
+            'value' => 0,
+            'label' => $this->l('No'),
+        ),
+    ),
+);
+
+if (!TPAY_PS_17) {
+    $settings['form']['input'][] = $summarySetting;
+}
+
+return $settings;

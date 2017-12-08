@@ -8,7 +8,16 @@
 * You must not modify, adapt or create derivative works of this source code
 *
 *  @author    tpay.com
-*  @copyright 2010-2016 tpay.com
+*  @copyright 2010-2017 tpay.com
 *  @license   LICENSE.txt
 *}
-<h4>{l s='An error occurred while ordering. Contact the seller or choose another payment method.' mod='tpay'}</h4>
+<section>
+
+    {if $surcharge !== false}
+    <p>
+        {l s=' Fee charged for this payment method: ' mod='tpay'}
+        {l s=$surcharge}
+    </p>
+    {/if}
+
+</section>

@@ -16,7 +16,7 @@
 use tpayLibs\src\_class_tpay\Utilities\Util;
 use tpayLibs\src\Dictionaries\FieldsConfigDictionary;
 
-require_once _PS_MODULE_DIR_ . '/tpay/helpers/TpayHelperClient.php';
+require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
 require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
 
 /**
@@ -61,17 +61,21 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             false,
             $customer->secure_key
         );
-        $orderId = $this->module->currentOrder;
+        $orderId = OrderCore::getOrderByCartId($cart->id);
         $this->currentOrderId = $orderId;
         $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crc_sum;
-        $paymentType = 'basic';
+        $type = Tools::getValue('type');
+        $installments = $type === TPAY_PAYMENT_INSTALLMENTS ? true : false;
+
+        $paymentType = $type === TPAY_PAYMENT_INSTALLMENTS || $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
+
         /*
          * Insert order to db
          */
         TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
-        $this->initBasicClient();
+        $this->initBasicClient($installments);
         $this->context->cookie->last_order = $orderId;
         if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
             $this->processCardPayment($orderId);
@@ -81,37 +85,41 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     }
 
-    private function initBasicClient()
+    private function initBasicClient($installments)
     {
         $cart = $this->context->cart;
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
-            'opis'                => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
+            'opis'         => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'             => $this->context->link->getModuleLink('tpay', 'order-success') . '?utm_nooverride=1',
-            'pow_url_blad'        => $this->context->link->getModuleLink('tpay', 'order-error') . '?utm_nooverride=1',
-            'email'               => $this->context->cookie->email,
-            'imie'                => $billingAddress->firstname,
-            'nazwisko'            => $billingAddress->lastname,
-            'telefon'             => $billingAddress->phone,
-            'adres'               => $billingAddress->address1,
-            'miasto'              => $billingAddress->city,
-            'kod'                 => $billingAddress->postcode,
-            'wyn_url'             => $this->context->link->getModuleLink('tpay', 'confirmation',
+            'pow_url'      => $this->context->link->getModuleLink('tpay', 'order-success'),
+            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error'),
+            'email'        => $this->context->cookie->email,
+            'imie'         => $billingAddress->firstname,
+            'nazwisko'     => $billingAddress->lastname,
+            'telefon'      => $billingAddress->phone,
+            'adres'        => $billingAddress->address1,
+            'miasto'       => $billingAddress->city,
+            'kod'          => $billingAddress->postcode,
+            'wyn_url'      => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
-            'akceptuje_regulamin' => (int)Tools::getValue('regulations'),
-
         );
-        if ((int)Tools::getValue('channel') > 0) {
-            $this->tpayClientConfig += array('kanal' => (int)Tools::getValue('channel'));
+        if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('akceptuje_regulamin') === 1
+            || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))) {
+            $this->tpayClientConfig['akceptuje_regulamin'] = 1;
+        }
+        if ((int)Tools::getValue('grupa') > 0) {
+            $this->tpayClientConfig += array('grupa' => (int)Tools::getValue('grupa'));
+        }
+        if ($installments) {
+            $this->tpayClientConfig['grupa'] = 109;
         }
         foreach ($this->tpayClientConfig as $key => $value) {
             if (empty($value)) {
                 unset($this->tpayClientConfig[$key]);
             }
         }
-
     }
 
     private function processCardPayment($orderId)
@@ -141,7 +149,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
             $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])->setOrderID('')
                 ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
-                $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
+                    $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
             $this->tpayPaymentId = $response['sale_auth'];
             $this->setOrderAsConfirmed($orderId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
@@ -193,43 +201,43 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private function redirectToPayment()
     {
-
-        if (Tools::getValue('blikCode') && (is_int((int)(Tools::getValue('blikCode'))))) {
+        if (Tools::getValue('blikcode') && (is_int((int)(Tools::getValue('blikcode'))))) {
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
             $tpayBasicClient = TpayHelperClient::getBasicClient();
-            $this->setTemplate('tpayRedirect.tpl');
-            $this->context->smarty->assign(array(
-                'tpay_form'   => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
-                'tpay_path'   => _MODULE_DIR_ . 'tpay/views',
-                'HOOK_HEADER' => Hook::exec('displayHeader'),
-            ));
+            if (TPAY_PS_17) {
+                $this->setTemplate(TPAY_17_PATH . '/redirect.tpl');
+                echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true);
+            } else {
+                $this->setTemplate('tpayRedirect.tpl');
+                $this->context->smarty->assign(array(
+                    'tpay_form'   => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
+                    'tpay_path'   => _MODULE_DIR_ . 'tpay/views',
+                    'HOOK_HEADER' => Hook::exec('displayHeader'),
+                ));
+            }
         }
     }
 
     private function processBlikPayment($data)
     {
-        $data['kanal'] = 64;
+        $data['grupa'] = 150;
         $data['akceptuje_regulamin'] = 1;
         $tpayApiClient = TpayHelperClient::getApiClient();
 
         $resp = $tpayApiClient->create($data);
 
         if ((int)$resp['result'] === 1) {
-            $blikData = array();
-            $blikData['code'] = Tools::getValue('blikCode');
+            $blikData['code'] = Tools::getValue('blikcode');
             $blikData['title'] = $resp['title'];
 
-            $resp = $tpayApiClient->handleBlikPayment($blikData);
+            $respBlik = $tpayApiClient->handleBlikPayment($blikData);
 
-            if ($resp) {
-                $pow_url = $data['pow_url'];
-                Tools::redirect($pow_url);
+            if ($respBlik) {
+                Tools::redirect($data['pow_url']);
             } else {
-                $pow_url_blad = $data['pow_url_blad'];
-                Tools::redirect($pow_url_blad);
+                Tools::redirect($resp['url']);
             }
-            die();
         } else {
             $pow_url_blad = $data['pow_url_blad'];
             Tools::redirect($pow_url_blad);

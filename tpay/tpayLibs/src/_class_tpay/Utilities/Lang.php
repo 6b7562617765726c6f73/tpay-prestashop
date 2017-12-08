@@ -50,7 +50,7 @@ class Lang extends Keys
      * @return string
      */
 
-    private function get($key)
+    public function get($key)
     {
         return $this->translations[$this->currentLanguage][$key];
     }

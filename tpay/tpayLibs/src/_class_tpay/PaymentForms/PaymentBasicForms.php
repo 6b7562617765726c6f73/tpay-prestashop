@@ -33,45 +33,35 @@ class PaymentBasicForms extends BasicPaymentOptions
     private $regulationURL = 'https://secure.tpay.com/regulamin.pdf';
 
     /**
-     * Create HTML form for EHat payment based on transaction config
-     * More information about config fields @see FieldsConfigValidator::$panelPaymentRequestFields
-     *
-     * @param array $config transaction config
-     *
-     * @return string
-     */
-    public function getEHatForm($config)
-    {
-        $config = $this->prepareConfig($config);
-
-        $config['kanal'] = 58;
-        $config['akceptuje_regulamin'] = 1;
-
-        $data = array(
-            static::ACTION_URL => $this->panelURL,
-            static::FIELDS     => $config,
-        );
-
-        return Util::parseTemplate(static::PAYMENT_FORM, $data);
-    }
-
-    /**
      * Create HTML form for basic panel payment based on transaction config
      * More information about config fields @see FieldsConfigValidator::$panelPaymentRequestFields
      *
      * @param array $config transaction config
      *
      * @param bool $redirect redirect automatically
+     * @param string $actionURL
+     * @param bool $showPayButton
+     * @param bool $showRegulations
      * @return string
      */
-    public function getTransactionForm($config, $redirect = false)
-    {
-        $config = $this->prepareConfig($config);
+    public function getTransactionForm(
+        $config = array(),
+        $redirect = false,
+        $actionURL = null,
+        $showPayButton = true,
+        $showRegulations = false
+    ) {
+        if (!empty($config)) {
+            $config = $this->prepareConfig($config);
+        }
 
         $data = array(
-            static::ACTION_URL => $this->panelURL,
-            static::FIELDS     => $config,
-            'redirect'         => $redirect,
+            static::ACTION_URL          => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
+            static::FIELDS              => $config,
+            'redirect'                  => $redirect,
+            'showPayButton'             => (bool)$showPayButton,
+            'regulation_url'            => $this->regulationURL,
+            'show_regulations_checkbox' => $showRegulations,
         );
 
         return Util::parseTemplate(static::PAYMENT_FORM, $data);
@@ -82,7 +72,6 @@ class PaymentBasicForms extends BasicPaymentOptions
      * More information about config fields @see FieldsConfigValidator::$blikPaymentRequestFields
      * @return string
      * @internal param string $alias alias of registered user for One Click transactions
-     *
      */
     public function getBlikSelectionForm()
     {
@@ -93,6 +82,16 @@ class PaymentBasicForms extends BasicPaymentOptions
         return Util::parseTemplate('blikForm', $data);
     }
 
+    public function getBlikBasicForm($actionURL)
+    {
+        $data = array(
+            'regulation_url' => $this->regulationURL,
+            'url'            => $actionURL,
+        );
+
+        return Util::parseTemplate('T6BlikForm', $data);
+    }
+
     /**
      * Create HTML form for payment with bank selection based on transaction config
      * More information about config fields @see FieldsConfigValidator::$panelPaymentRequestFields
@@ -101,28 +100,39 @@ class PaymentBasicForms extends BasicPaymentOptions
      * @param bool $smallList type of bank selection list big icons or small form with select
      * @param bool $showRegulations show accept regulations input
      *
+     * @param string $actionURL sets non default action URL of form
+     * @param bool $showPayButton
      * @return string
-     *
-     * @throws TException
+     * @internal param bool $hasConfig sets if validate config at this point
      */
-    public function getBankSelectionForm($config, $smallList = false, $showRegulations = true)
-    {
-        $config = $this->prepareConfig($config);
-        $config['kanal'] = 0;
+    public function getBankSelectionForm(
+        $config = array(),
+        $smallList = false,
+        $showRegulations = true,
+        $actionURL = null,
+        $showPayButton = true
+    ) {
+        if (!empty($config)) {
+            $config = $this->prepareConfig($config);
+        }
+        $config['grupa'] = 0;
         $config['akceptuje_regulamin'] = ($showRegulations) ? 0 : 1;
 
         $data = array(
-            static::ACTION_URL => $this->panelURL,
-            static::FIELDS     => $config,
+            static::ACTION_URL          => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
+            static::FIELDS              => $config,
+            'redirect'                  => false,
+            'showPayButton'             => (bool)$showPayButton,
+            'regulation_url'            => $this->regulationURL,
+            'show_regulations_checkbox' => $showRegulations,
         );
 
         $form = Util::parseTemplate(static::PAYMENT_FORM, $data);
 
-        $data = array(
-            'merchant_id'               => $this->merchantId,
-            'regulation_url'            => $this->regulationURL,
-            'show_regulations_checkbox' => $showRegulations,
-            'form'                      => $form
+        $data += array(
+            'merchant_id'    => $this->merchantId,
+            'regulation_url' => $this->regulationURL,
+            'form'           => $form
         );
         if ($smallList) {
             $templateFile = 'bankSelectionList';

@@ -12,6 +12,13 @@
     box-shadow: 0 0 0.8em #929292;
     padding: 20px 20px 20px 90px;
 }
+
+#tpayBlikButton {
+    color: #fff;
+    background-color: #2fb5d2;
+    border-color: transparent;
+}
+
 .button_blik {
     float: right;
     border: none;
@@ -52,20 +59,6 @@
 #tpay-row i,
 #tpay-nav i {
     font-family: 'FontAwesome';
-}
-
-#tpay-row i.arrow {
-    display: block;
-    content: "\f054";
-    position: absolute;
-    right: 15px;
-    margin-top: -11px;
-    top: 50%;
-    font-family: "FontAwesome";
-    font-size: 25px;
-    height: 22px;
-    width: 14px;
-    color: #777;
 }
 
 /*
@@ -115,6 +108,7 @@ button.tpay {
     display: block;
     top: 0;
     margin: 10px 0;
+    text-align: center;
 }
 
 .tpay-form input[type=submit].left,

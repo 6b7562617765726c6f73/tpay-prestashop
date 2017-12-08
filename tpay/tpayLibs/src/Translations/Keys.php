@@ -21,6 +21,7 @@ class Keys
         'merchant_info',
         'amount',
         'order',
+        'redirect_info',
         // BLIK
         'blik_info',
         'blik_info2',

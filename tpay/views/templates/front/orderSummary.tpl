@@ -44,16 +44,16 @@
                             <td>{displayPrice price=$shippingCostT}</td>
                         </tr>
                         {if isset($surcharge)}
-                            <tr>
-                                <td colspan="3">{l s='Payment surcharge' mod='tpay'}</td>
-                                <td>{displayPrice price=$surcharge}</td>
-                            </tr>
+                        <tr>
+                            <td colspan="3">{l s='Payment surcharge' mod='tpay'}</td>
+                            <td>{displayPrice price=$surcharge}</td>
+                        </tr>
                         {/if}
                         <tr>
                             <td colspan="3">{l s='Order price ' mod='tpay'}</td>
                             <td>{displayPrice price=$orderTotal}
                                 {if $use_taxes == 1}
-                                    {l s='(total)' mod='tpay'}
+                                {l s='(total)' mod='tpay'}
                                 {/if}</td>
                         </tr>
                     </table>

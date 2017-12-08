@@ -16,7 +16,11 @@ use tpayLibs\src\Dictionaries\CardDictionary;
 
 class PaymentCardForms extends PaymentCard
 {
-
+    /**
+     * URL to tpay regulations file
+     * @var string
+     */
+    private $regulationURL = 'https://secure.tpay.com/regulamin.pdf';
     /**
      * tpay payment url
      * @var string
@@ -55,6 +59,7 @@ class PaymentCardForms extends PaymentCard
         $data = array(
             'action_url'              => $this->cardsURL,
             CardDictionary::SALE_AUTH => $apiResponse[CardDictionary::SALE_AUTH],
+            'regulation_url'            => $this->regulationURL,
         );
 
         return Util::parseTemplate('cardPaymentForm', $data);
@@ -77,7 +82,8 @@ class PaymentCardForms extends PaymentCard
         $data = array(
             'rsa_key'               => $this->cardKeyRSA,
             'payment_redirect_path' => $paymentRedirectPath,
-            'card_save_allowed'     => $cardSaveAllowed
+            'card_save_allowed'     => $cardSaveAllowed,
+            'regulation_url'        => $this->regulationURL,
         );
 
         return Util::parseTemplate('gate', $data);

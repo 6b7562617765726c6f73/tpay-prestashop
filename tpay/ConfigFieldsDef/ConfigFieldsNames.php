@@ -18,7 +18,6 @@ class ConfigFieldsNames
             'TPAY_APIKEY',
             'TPAY_APIPASS',
             'TPAY_DEBUG',
-            'TPAY_GOOGLE_ID',
             'TPAY_CHECK_IP',
             'TPAY_CHECK_PROXY',
             'TPAY_SHOW_REGULATIONS',

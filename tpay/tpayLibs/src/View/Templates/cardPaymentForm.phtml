@@ -9,3 +9,9 @@ echo $data['action_url'] ?>" method="POST">
     <input type="hidden" name="sale_auth" value="<?php echo $data['sale_auth'] ?>"/>
     <input id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
 </form>
+<small>
+    <?php $lang->l('blik_accept') ?>
+    <a href="<?php echo $data['regulation_url'] ?>"
+       target="_blank"><?php $lang->l('regulations_url') ?></a>
+    <?php $lang->l('regulations'); ?>
+</small>
