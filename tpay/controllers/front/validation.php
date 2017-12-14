@@ -158,14 +158,16 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private function getRedirectionForm($showRegulations)
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getTransactionForm([], false, 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS, true,
+        return $formProvider->getTransactionForm([], false,
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS), true,
             $showRegulations);
     }
 
     private function getBankForm($smallList = false, $regulations = true)
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getBankSelectionForm([], $smallList, $regulations, 'payment?type=' . TPAY_PAYMENT_BASIC);
+        return $formProvider->getBankSelectionForm([], $smallList, $regulations,
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_BASIC));
     }
 
     private function assignSmartyData($paymentForm, $nextTpl = null)
@@ -243,7 +245,8 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             $language = 'en';
         }
         (new Util)->setLanguage($language)->setPath(__PS_BASE_URI__ . 'modules/tpay/tpayLibs/src/');
-        $form = $paymentCard->getOnSiteCardForm('payment?type=' . TPAY_PAYMENT_CARDS, false);
+        $form = $paymentCard->getOnSiteCardForm($this->context->link->getModuleLink('tpay',
+            'payment?type=' . TPAY_PAYMENT_CARDS), false);
         $this->setTpayTemplate();
         $this->assignSmartyData($form, 'payment.tpl');
     }
@@ -258,7 +261,8 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private function getBlikForm()
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getBlikBasicForm('payment?type=basic');
+        return $formProvider->getBlikBasicForm($this->context->link->getModuleLink('tpay',
+            'payment?type=' . TPAY_PAYMENT_BASIC));
     }
 
     /**
