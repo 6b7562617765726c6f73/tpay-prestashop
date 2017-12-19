@@ -27,7 +27,6 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
-        $this->emptyCart();
         $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
         $this->display_column_left = false;
         $this->context->cart->id = null;
@@ -48,14 +47,6 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
         $this->context->cookie->__unset('last_order');
         TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH . '/orderSuccess17.tpl') : $this->setTemplate('orderSuccess.tpl');
         parent::initContent();
-    }
-
-    private function emptyCart()
-    {
-        $products = $this->context->cart->getProducts();
-        foreach ($products as $product) {
-            $this->context->cart->deleteProduct($product['id_product']);
-        }
     }
 
     /**

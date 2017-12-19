@@ -23,6 +23,6 @@
     {/if}
 </div>
 {if $display_OCS === true}
-{$confirmation_script}
+{$confirmation_script nofilter}
 {/if}
 {/block}
