@@ -214,7 +214,6 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'deliveryAddressT' => $deliveryAddress,
             'installments'     => $this->installments,
             'tplDir'           => $tplDir,
-            'products'         => $orderProductsDetails,
             'nextTpl'          => $nextTpl,
             'paymentForm'      => $paymentForm,
         ));
