@@ -1635,7 +1635,7 @@ jQuery(function ($) {
     this.url = url;
     this.pubkey = pubkey;
 
-    $("#card_payment_form").attr("action", url);
+    // $("#card_payment_form").attr("action", url);
 
     function SubmitPayment() {
 

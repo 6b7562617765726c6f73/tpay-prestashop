@@ -264,6 +264,16 @@ class StandardFieldsDictionary
                 FieldsConfigDictionary::MAXLENGTH_128
             ),
         ],
+        /**
+         * Module name used for statistics.
+         */
+        'module'         => [
+            FieldsConfigDictionary::REQUIRED   => false,
+            FieldsConfigDictionary::VALIDATION => array(
+                FieldsConfigDictionary::STRING,
+                FieldsConfigDictionary::MAXLENGTH_32
+            ),
+        ],
     ];
 
     const RESPONSE_FIELDS = array(

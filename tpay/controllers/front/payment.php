@@ -104,6 +104,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             'kod'          => $billingAddress->postcode,
             'wyn_url'      => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
+            'module'       => 'prestashop ' . _PS_VERSION_,
         );
         if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('akceptuje_regulamin') === 1
             || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))) {
@@ -141,7 +142,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             ->setCurrency($this->context->currency->iso_code_num)
             ->setOrderID($midId . '*tpay*' . $this->tpayClientConfig['crc']);
         $tpayCardClient->setLanguage($this->context->language->iso_code)
-            ->setReturnUrls($this->tpayClientConfig['pow_url'], $this->tpayClientConfig['pow_url_blad']);
+            ->setReturnUrls($this->tpayClientConfig['pow_url'], $this->tpayClientConfig['pow_url_blad'])
+            ->setModuleName('prestashop ' . _PS_VERSION_);
         $response = $tpayCardClient->registerSale($clientName, $clientEmail, $this->tpayClientConfig['opis'],
             $cardData);
 
@@ -158,7 +160,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             Tools::redirect($response['3ds_url']);
         } else {
             $this->setOrderAsConfirmed($orderId, true);
-            if (Configuration::get('TPAY_DEBUG') === 1) {
+            if (Configuration::get('TPAY_CARD_DEBUG') === 1) {
                 var_dump($response);
             } else {
                 Tools::redirect($this->tpayClientConfig['pow_url_blad']);

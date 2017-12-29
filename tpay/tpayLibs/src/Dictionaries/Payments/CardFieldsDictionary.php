@@ -128,6 +128,10 @@ class CardFieldsDictionary
             FieldsConfigDictionary::TYPE       => FieldsConfigDictionary::BOOLEAN,
             FieldsConfigDictionary::VALIDATION => array(FieldsConfigDictionary::BOOLEAN),
         ),
+        /**
+         * Module name used for statistics.
+         */
+        'module' => StandardFieldsDictionary::REQUEST_FIELDS['module'],
     );
 
     /**

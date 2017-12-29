@@ -9,7 +9,7 @@ const CARD_SAVE_ALLOWED = 'card_save_allowed';
 ?>
 <link rel="stylesheet" type="text/css" href="<?php
 echo $data[STATIC_FILES_URL] ?>View/Styles/gate.css"/>
-<form method="post" id="card_payment_form" name="card_payment_form">
+<form method="post" id="card_payment_form" name="card_payment_form" action="<?php echo $data['payment_redirect_path'] ?>">
     <input type="hidden" name="carddata" id="carddata" value=""/>
 
     <div id="powered_by"></div>
@@ -69,4 +69,4 @@ echo $data[STATIC_FILES_URL] ?>View/Styles/gate.css"/>
 <script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jsencrypt.min.js"></script>
 <script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/jquery.formance.min.js"></script>
 <script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/string_routines.js"></script>
-<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/cardPayment.js?12"></script>
+<script type="text/javascript" src="<?php echo $data[STATIC_FILES_URL] ?>View/JS/cardPayment.js?13"></script>
