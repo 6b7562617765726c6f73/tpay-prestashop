@@ -172,7 +172,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $orderTotal = round((float)$order->total_paid + $surcharge, 2);
             $orderTotal = number_format($orderTotal, 2, '.', '');
 
-            $this->tpayClient->setAmount((double)$orderTotal)
+            $this->tpayClient->setAmount((float)$orderTotal)
                 ->setCurrency($currency['iso_code_num'])
                 ->setOrderID($orderRes['order_id'])
                 ->validateCardSign($orderRes['sign'], $orderRes['sale_auth'], $orderRes['card'],
