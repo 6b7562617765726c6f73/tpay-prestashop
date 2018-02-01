@@ -13,10 +13,12 @@
  * @license   LICENSE.txt
  */
 
+use tpayLibs\src\_class_tpay\Utilities\TException;
 use tpayLibs\src\_class_tpay\Utilities\Util;
 use tpayLibs\src\Dictionaries\FieldsConfigDictionary;
 
 require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
+require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayOrderStatusHandler.php';
 require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
 
 /**
@@ -32,8 +34,14 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private $tpayPaymentId;
 
+    /**
+     * @var TpayOrderStatusHandler
+     */
+    private $statusHandler;
+
     public function initContent()
     {
+        $this->statusHandler = new TpayOrderStatusHandler();
         $this->display_column_left = false;
         $cart = $this->context->cart;
         $currency = $this->context->currency;
@@ -91,23 +99,24 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
-            'opis'         => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
+            'opis' => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'      => $this->context->link->getModuleLink('tpay', 'order-success'),
+            'pow_url' => $this->context->link->getModuleLink('tpay', 'order-success'),
             'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error'),
-            'email'        => $this->context->cookie->email,
-            'imie'         => $billingAddress->firstname,
-            'nazwisko'     => $billingAddress->lastname,
-            'telefon'      => $billingAddress->phone,
-            'adres'        => $billingAddress->address1,
-            'miasto'       => $billingAddress->city,
-            'kod'          => $billingAddress->postcode,
-            'wyn_url'      => $this->context->link->getModuleLink('tpay', 'confirmation',
+            'email' => $this->context->cookie->email,
+            'imie' => $billingAddress->firstname,
+            'nazwisko' => $billingAddress->lastname,
+            'telefon' => $billingAddress->phone,
+            'adres' => $billingAddress->address1,
+            'miasto' => $billingAddress->city,
+            'kod' => $billingAddress->postcode,
+            'wyn_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
-            'module'       => 'prestashop ' . _PS_VERSION_,
+            'module' => 'prestashop ' . _PS_VERSION_,
         );
         if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('akceptuje_regulamin') === 1
-            || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))) {
+            || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))
+        ) {
             $this->tpayClientConfig['akceptuje_regulamin'] = 1;
         }
         if ((int)Tools::getValue('grupa') > 0) {
@@ -153,51 +162,18 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
                     $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
             $this->tpayPaymentId = $response['sale_auth'];
-            $this->setOrderAsConfirmed($orderId, false);
+            $this->statusHandler->setOrdersAsConfirmed($orderId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
 
         } elseif (isset($response['3ds_url'])) {
             Tools::redirect($response['3ds_url']);
         } else {
-            $this->setOrderAsConfirmed($orderId, true);
+            $this->statusHandler->setOrdersAsConfirmed($orderId, true);
             if (Configuration::get('TPAY_CARD_DEBUG') === 1) {
                 var_dump($response);
             } else {
                 Tools::redirect($this->tpayClientConfig['pow_url_blad']);
             }
-        }
-    }
-
-
-    /**
-     * Update order status.
-     *
-     * @param int $orderId
-     * @param bool $error change to error status flag
-     */
-    private function setOrderAsConfirmed($orderId, $error = false)
-    {
-        $orderHistory = new OrderHistory();
-
-        $lastOrderState = $orderHistory->getLastOrderState($orderId);
-        $lastOrderState = (int)$lastOrderState->id;
-        if ((int)Configuration::get('TPAY_OWN_STATUS') === 1) {
-            $targetOrderState = !$error ? Configuration::get('TPAY_OWN_PAID') : Configuration::get('TPAY_OWN_ERROR');
-        } else {
-            $targetOrderState = !$error ? Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
-        }
-
-        if ($lastOrderState !== $targetOrderState) {
-            $orderHistory->id_order = $orderId;
-            $orderHistory->changeIdOrderState($targetOrderState, $orderId);
-            $orderHistory->add();
-        }
-        if (!$error) {
-            $order = new Order($orderId);
-            $payment = $order->getOrderPaymentCollection();
-            $payments = $payment->getAll();
-            $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
-            $payments[$payment->count() - 1]->update();
         }
     }
 
@@ -213,8 +189,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             } else {
                 $this->setTemplate('tpayRedirect.tpl');
                 $this->context->smarty->assign(array(
-                    'tpay_form'   => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
-                    'tpay_path'   => _MODULE_DIR_ . 'tpay/views',
+                    'tpay_form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
+                    'tpay_path' => _MODULE_DIR_ . 'tpay/views',
                     'HOOK_HEADER' => Hook::exec('displayHeader'),
                 ));
             }
@@ -225,24 +201,25 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     {
         $data['grupa'] = 150;
         $data['akceptuje_regulamin'] = 1;
+        $errorUrl = $data['pow_url_blad'];
         $tpayApiClient = TpayHelperClient::getApiClient();
+        try {
+            $resp = $tpayApiClient->create($data);
+            if ((int)$resp['result'] === 1) {
+                $blikData['code'] = Tools::getValue('blikcode');
+                $blikData['title'] = $resp['title'];
+                $respBlik = $tpayApiClient->handleBlikPayment($blikData);
 
-        $resp = $tpayApiClient->create($data);
-
-        if ((int)$resp['result'] === 1) {
-            $blikData['code'] = Tools::getValue('blikcode');
-            $blikData['title'] = $resp['title'];
-
-            $respBlik = $tpayApiClient->handleBlikPayment($blikData);
-
-            if ($respBlik) {
-                Tools::redirect($data['pow_url']);
+                if ($respBlik) {
+                    Tools::redirect($data['pow_url']);
+                } else {
+                    Tools::redirect($resp['url']);
+                }
             } else {
-                Tools::redirect($resp['url']);
+                Tools::redirect($errorUrl);
             }
-        } else {
-            $pow_url_blad = $data['pow_url_blad'];
-            Tools::redirect($pow_url_blad);
+        } catch (TException $e) {
+            Tools::redirect($errorUrl);
         }
     }
 }
