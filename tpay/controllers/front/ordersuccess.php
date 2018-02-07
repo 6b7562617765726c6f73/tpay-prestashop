@@ -67,6 +67,7 @@ class TpayOrderSuccessModuleFrontController extends ModuleFrontController
         if (Validate::isLoadedObject($this->order)) {
             $currency = new Currency((int)$this->order->id_currency);
             $params = array();
+            $params['order'] = $this->order;
             $params['objOrder'] = $this->order;
             $params['currencyObj'] = $currency;
             $params['currency'] = $currency->sign;
