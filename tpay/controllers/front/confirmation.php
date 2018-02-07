@@ -13,13 +13,13 @@
  * @copyright 2010-2016 tpay.com
  * @license   LICENSE.txt
  */
-use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * include tpay client and model functions.
  */
 require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
 require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
+require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayOrderStatusHandler.php';
 
 /**
  * Class ConfirmationModuleFrontController.
@@ -27,8 +27,15 @@ require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
 class TpayConfirmationModuleFrontController extends ModuleFrontController
 {
     private $tpayClient = false;
+
     private $paymentType = false;
+
     private $tpayPaymentId;
+
+    /**
+     * @var TpayOrderStatusHandler
+     */
+    private $statusHandler;
 
     /**
      * Hook header for confirmation processing.
@@ -37,6 +44,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
      */
     public function initHeader()
     {
+        $this->statusHandler = new TpayOrderStatusHandler();
         $paymentType = Tools::getValue('type');
 
         switch ($paymentType) {
@@ -53,9 +61,6 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             default:
                 die('incorrect payment type');
         }
-
-
-        die;
     }
 
     private function initBasicClient()
@@ -83,8 +88,12 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             if ($orderId === 0) {
                 return false;
             }
-
-            $this->setOrderAsConfirmed($orderId);
+            $surcharge = (float)$orderData['tj_surcharge'];
+            $order = new Order($orderId);
+            $orderTotal = round($order->getOrdersTotalPaid() + $surcharge, 2);
+            $orderTotal === (float)number_format($orderRes['tr_paid'], 2, '.', '') ?
+                $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId) :
+                $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
 
             return true;
         } catch (Exception $e) {
@@ -105,37 +114,6 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
 
             return false;
         }
-    }
-
-    /**
-     * Update order status.
-     *
-     * @param int $orderId
-     * @param bool $error change to error status flag
-     */
-    private function setOrderAsConfirmed($orderId, $error = false)
-    {
-        $orderHistory = new OrderHistory();
-
-        $lastOrderState = $orderHistory->getLastOrderState($orderId);
-        $lastOrderState = (int)$lastOrderState->id;
-        if ((int)Configuration::get('TPAY_OWN_STATUS') === 1) {
-            $targetOrderState = !$error ? (int)Configuration::get('TPAY_OWN_PAID') : Configuration::get('TPAY_OWN_ERROR');
-        } else {
-            $targetOrderState = !$error ? (int)Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
-        }
-
-        if ($lastOrderState !== $targetOrderState) {
-            $orderHistory->id_order = $orderId;
-            $orderHistory->changeIdOrderState($targetOrderState, $orderId);
-            $orderHistory->add();
-        }
-        $order = new Order($orderId);
-        $payment = $order->getOrderPaymentCollection();
-        $payments = $payment->getAll();
-        $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
-        $payments[$payment->count() - 1]->update();
-
     }
 
     private function initCardClient()
@@ -169,10 +147,9 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $order = new Order($orderId);
             $currency = (new Currency($order->id_currency));
             $currency = $currency->getCurrency($order->id_currency);
-            $orderTotal = round((float)$order->total_paid + $surcharge, 2);
-            $orderTotal = number_format($orderTotal, 2, '.', '');
+            $orderTotal = round($order->getOrdersTotalPaid() + $surcharge, 2);
 
-            $this->tpayClient->setAmount((float)$orderTotal)
+            $this->tpayClient->setAmount((double)$orderTotal)
                 ->setCurrency($currency['iso_code_num'])
                 ->setOrderID($orderRes['order_id'])
                 ->validateCardSign($orderRes['sign'], $orderRes['sale_auth'], $orderRes['card'],
@@ -180,8 +157,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             if ($orderId === 0) {
                 return false;
             }
-
-            $this->setOrderAsConfirmed($orderId);
+            $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId);
 
             return true;
         } catch (Exception $e) {

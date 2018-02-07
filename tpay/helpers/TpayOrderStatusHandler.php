@@ -7,14 +7,21 @@
  */
 class TpayOrderStatusHandler extends Helper
 {
-    public function setOrdersAsConfirmed($orderId, $error = false)
+    /**
+     * Update orders statuses.
+     *
+     * @param int $orderId
+     * @param string $tpayPaymentId
+     * @param bool $error change to error status flag
+     */
+    public function setOrdersAsConfirmed($orderId, $tpayPaymentId, $error = false)
     {
         $order = new Order($orderId);
         $reference = $order->reference;
         $referencedOrders = Order::getByReference($reference)->getResults();
         foreach ($referencedOrders as $key => $orderObject) {
             if (!is_null($orderObject->id)) {
-                $this->setOrderAsConfirmed((int)$orderObject->id, $error);
+                $this->setOrderAsConfirmed((int)$orderObject->id, $tpayPaymentId, $error);
             }
         }
     }
@@ -23,9 +30,10 @@ class TpayOrderStatusHandler extends Helper
      * Update order status.
      *
      * @param int $orderId
+     * @param string $tpayPaymentId
      * @param bool $error change to error status flag
      */
-    private function setOrderAsConfirmed($orderId, $error = false)
+    private function setOrderAsConfirmed($orderId, $tpayPaymentId, $error = false)
     {
         $orderHistory = new OrderHistory();
 
@@ -46,7 +54,7 @@ class TpayOrderStatusHandler extends Helper
             $order = new Order($orderId);
             $payment = $order->getOrderPaymentCollection();
             $payments = $payment->getAll();
-            $payments[$payment->count() - 1]->transaction_id = $this->tpayPaymentId;
+            $payments[$payment->count() - 1]->transaction_id = $tpayPaymentId;
             $payments[$payment->count() - 1]->update();
         }
     }

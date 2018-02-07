@@ -162,13 +162,13 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
                     $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
             $this->tpayPaymentId = $response['sale_auth'];
-            $this->statusHandler->setOrdersAsConfirmed($orderId, false);
+            $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, false);
             Tools::redirect($this->tpayClientConfig['pow_url']);
 
         } elseif (isset($response['3ds_url'])) {
             Tools::redirect($response['3ds_url']);
         } else {
-            $this->statusHandler->setOrdersAsConfirmed($orderId, true);
+            $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
             if (Configuration::get('TPAY_CARD_DEBUG') === 1) {
                 var_dump($response);
             } else {
