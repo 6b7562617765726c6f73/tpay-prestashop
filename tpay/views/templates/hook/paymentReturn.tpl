@@ -13,14 +13,11 @@
 *}
 
 <div id="tpay-success">
-    <img src="{$modules_dir|escape:'htmlall':'UTF-8'}tpay/views/img/tpay_logo.png" alt="{l s='tpay logo' mod='tpay'}"
+    <img src="{$modulesDir|escape:'htmlall':'UTF-8'}tpay/views/img/tpay_logo.png" alt="{l s='tpay logo' mod='tpay'}"
          width="213" height="51"/><br/><br/>
     <h4>{l s='Thank you for your order and we invite you to further ' mod='tpay'} <a
-                href="/">{l s='shopping' mod='tpay'}</a>.</h4>
-    {if isset($redirectLink)}
-    <h4>{l s='Browse list of your' mod='tpay'} <a href="{$redirectLink}">{l s='orders' mod='tpay'}</a>.</h4>
+            href="{$homeLink}">{l s='shopping' mod='tpay'}</a>.</h4>
+    {if $TPAY_PS_17 === true}
+    <h4>{l s='Browse list of your' mod='tpay'} <a href="{$historyLink}">{l s='orders' mod='tpay'}</a>.</h4>
     {/if}
 </div>
-{if $display_OCS === true}
-{$confirmation_script nofilter}
-{/if}

@@ -50,7 +50,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.1';
+        $this->version = '1.5.2';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -628,6 +628,24 @@ class Tpay extends PaymentModule
         }
 
         return $this->display(__FILE__, 'paymentlogo.tpl', $this->getCacheId());
+    }
+
+    public function hookPaymentReturn($params)
+    {
+        if (!$this->active) {
+            return;
+        }
+        $this->context->smarty->assign([
+            'status' => Tools::getValue('status'),
+            'historyLink' => 'index.php?controller=history',
+            'homeLink' => 'index.php',
+            'contactLink' => 'index.php?controller=contact',
+            'modulesDir' => Tools::getHttpHost(true) . __PS_BASE_URI__ . 'modules/',
+            'TPAY_PS_17' => TPAY_PS_17,
+        ]);
+
+        return TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/hook/paymentReturn.tpl') :
+            $this->display(__FILE__, 'paymentReturn.tpl');
     }
 
 }

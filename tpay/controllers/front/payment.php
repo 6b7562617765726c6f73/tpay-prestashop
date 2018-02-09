@@ -96,12 +96,19 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     private function initBasicClient($installments)
     {
         $cart = $this->context->cart;
+        $customer = new Customer($cart->id_customer);
+        if (!Validate::isLoadedObject($customer)) {
+            Tools::redirect('index.php?controller=order&step=1');
+        }
+        $baseUrl = Tools::getHttpHost(true) . __PS_BASE_URI__;
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
             'opis' => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url' => $this->context->link->getModuleLink('tpay', 'order-success'),
+            'pow_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
+                (int)$cart->id.'&id_module=' . (int)$this->module->id . '&id_order=' . $this->module->currentOrder .
+                '&key='.$customer->secure_key . '&status=success',
             'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error'),
             'email' => $this->context->cookie->email,
             'imie' => $billingAddress->firstname,
