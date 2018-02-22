@@ -48,7 +48,7 @@ class TpayOrderStatusHandler extends Helper
         if ($lastOrderState !== $targetOrderState) {
             $orderHistory->id_order = $orderId;
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
-            $orderHistory->add();
+            $orderHistory->addWithemail(true);
         }
         if (!$error) {
             $order = new Order($orderId);

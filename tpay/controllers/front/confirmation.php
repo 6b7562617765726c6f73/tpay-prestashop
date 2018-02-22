@@ -66,10 +66,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     private function initBasicClient()
     {
         $this->tpayClient = TpayHelperClient::getBasicValidator();
-        $checkIp = (bool)Configuration::get('TPAY_CHECK_IP');
-        if (!$checkIp) {
-            $this->tpayClient->disableValidationServerIP();
-        }
+        $this->setServerValidation();
     }
 
     /**
@@ -94,8 +91,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $orderTotal === (float)number_format($orderRes['tr_paid'], 2, '.', '') ?
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId) :
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
-
-            return true;
+            die();
         } catch (Exception $e) {
             $log = array(
                 'e'     => $e,
@@ -109,9 +105,8 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
                 echo '<pre>';
                 var_dump($log);
                 echo '</pre>';
-                die;
+                die();
             }
-
             return false;
         }
     }
@@ -120,6 +115,11 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     {
         $midId = explode('*tpay*', Tools::getValue('order_id'));
         $this->tpayClient = TpayHelperClient::getCardValidator($midId[0]);
+        $this->setServerValidation();
+    }
+
+    private function setServerValidation()
+    {
         $checkIp = (bool)(int)Configuration::get('TPAY_CHECK_IP');
         $checkProxy = (bool)(int)Configuration::get('TPAY_CHECK_PROXY');
         if (!$checkIp) {
@@ -158,8 +158,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
                 return false;
             }
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId);
-
-            return true;
+            die();
         } catch (Exception $e) {
             $log = array(
                 'e'     => $e,
@@ -179,6 +178,5 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             return false;
         }
     }
-
 
 }
