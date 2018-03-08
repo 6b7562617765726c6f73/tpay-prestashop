@@ -1627,9 +1627,9 @@ jQuery(function ($) {
             return true
         }
     }.call(this);
+});
 
-
-    function CardPayment(url, pubkey) {
+function CardPayment(url, pubkey) {
 
 
     this.url = url;
@@ -1761,8 +1761,7 @@ jQuery(function ($) {
     }
 
 }
-    $(document).ready(function () {
-        var RSA = document.getElementById("tpayRSA").value;
-        new CardPayment("payment?type=cards", RSA);
-    });
+$(document).ready(function () {
+    var RSA = document.getElementById("tpayRSA").value;
+    new CardPayment("payment?type=cards", RSA);
 });
