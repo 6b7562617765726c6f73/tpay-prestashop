@@ -1,4 +1,5 @@
 <?php
+use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * Created by tpay.com.
@@ -36,26 +37,25 @@ class TpayOrderStatusHandler extends Helper
     private function setOrderAsConfirmed($orderId, $tpayPaymentId, $error = false)
     {
         $orderHistory = new OrderHistory();
-
-        $lastOrderState = $orderHistory->getLastOrderState($orderId);
-        $lastOrderState = (int)$lastOrderState->id;
-        if ((int)Configuration::get('TPAY_OWN_STATUS') === 1) {
+        $order = new Order($orderId);
+        $ownStatusSetting = (int)Configuration::get('TPAY_OWN_STATUS') === 1;
+        if ($ownStatusSetting) {
             $targetOrderState = !$error ? Configuration::get('TPAY_OWN_PAID') : Configuration::get('TPAY_OWN_ERROR');
         } else {
             $targetOrderState = !$error ? Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
         }
-
-        if ($lastOrderState !== $targetOrderState) {
+        $unpaidStatus = $ownStatusSetting ?
+            (int)Configuration::get('TPAY_OWN_WAITING') : (int)Configuration::get('TPAY_NEW');
+        if ((int)$order->current_state === $unpaidStatus) {
             $orderHistory->id_order = $orderId;
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->addWithemail(true);
-        }
-        if (!$error) {
-            $order = new Order($orderId);
-            $payment = $order->getOrderPaymentCollection();
-            $payments = $payment->getAll();
-            $payments[$payment->count() - 1]->transaction_id = $tpayPaymentId;
-            $payments[$payment->count() - 1]->update();
+            if (!$error) {
+                $payments = $order->getOrderPaymentCollection();
+                $payments[0]->transaction_id = $tpayPaymentId;
+                $payments[0]->update();
+            }
         }
     }
+
 }

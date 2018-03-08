@@ -13,6 +13,7 @@
  * @copyright 2010-2016 tpay.com
  * @license   LICENSE.txt
  */
+use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * include tpay client and model functions.
@@ -93,6 +94,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
             die();
         } catch (Exception $e) {
+            Util::log('exception in payment confirmation', $e->getMessage());
             $log = array(
                 'e'     => $e,
                 'post'  => $_POST,
@@ -143,23 +145,23 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $tpayOrderId = explode('*tpay*', $orderRes['order_id']);
             $orderData = TpayModel::getOrderIdAndSurcharge($tpayOrderId[1]);
             $orderId = (int)$orderData['tj_order_id'];
+            if ($orderId === 0) {
+                throw new Exception('Order ID value is 0!');
+            }
             $surcharge = (float)$orderData['tj_surcharge'];
             $order = new Order($orderId);
             $currency = (new Currency($order->id_currency));
             $currency = $currency->getCurrency($order->id_currency);
             $orderTotal = round($order->getOrdersTotalPaid() + $surcharge, 2);
-
             $this->tpayClient->setAmount((double)$orderTotal)
                 ->setCurrency($currency['iso_code_num'])
                 ->setOrderID($orderRes['order_id'])
                 ->validateCardSign($orderRes['sign'], $orderRes['sale_auth'], $orderRes['card'],
                     $orderRes['date'], 'correct', isset($orderRes['test_mode']) ? '1' : '');
-            if ($orderId === 0) {
-                return false;
-            }
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId);
             die();
         } catch (Exception $e) {
+            Util::log('exception in payment confirmation', $e->getMessage());
             $log = array(
                 'e'     => $e,
                 'post'  => $_POST,
