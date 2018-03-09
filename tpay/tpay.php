@@ -417,7 +417,7 @@ class Tpay extends PaymentModule
         } else {
             $switch = 'radio';
         }
-        $orderStatesData = OrderState::getOrderStates(1);
+        $orderStatesData = OrderState::getOrderStates($this->context->language->id);
         $orderStates = array();
         foreach ($orderStatesData as $state) {
             array_push($orderStates, array(

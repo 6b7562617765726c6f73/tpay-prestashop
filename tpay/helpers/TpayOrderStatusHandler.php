@@ -44,9 +44,8 @@ class TpayOrderStatusHandler extends Helper
         } else {
             $targetOrderState = !$error ? Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
         }
-        $unpaidStatus = $ownStatusSetting ?
-            (int)Configuration::get('TPAY_OWN_WAITING') : (int)Configuration::get('TPAY_NEW');
-        if ((int)$order->current_state === $unpaidStatus) {
+        $orderStatusesHistory = TpayModel::getOrderStatusHistory($orderId);
+        if (!in_array($targetOrderState, $orderStatusesHistory)) {
             $orderHistory->id_order = $orderId;
             $orderHistory->changeIdOrderState($targetOrderState, $orderId);
             $orderHistory->addWithemail(true);

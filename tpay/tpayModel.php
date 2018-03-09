@@ -176,4 +176,25 @@ class TpayModel extends ObjectModel
 
         return Db::getInstance()->getValue($get_sql);
     }
+
+    /**
+     * @param int $orderId
+     * @return array
+     */
+    public static function getOrderStatusHistory($orderId)
+    {
+        $sql = 'SELECT id_order_state
+                FROM ' . _DB_PREFIX_ . 'order_history
+                WHERE id_order=' . (int)$orderId;
+
+        $rows = Db::getInstance()->executeS($sql);
+        $statuses = [];
+        foreach ($rows as $row => $value) {
+            foreach ($value as $status => $statusID)
+                $statuses[]=$statusID;
+        }
+
+        return $statuses;
+    }
+
 }
