@@ -9,7 +9,7 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    tpay.com
- * @copyright 2010-2016 tpay.com
+ * @copyright 2010-2018 tpay.com
  * @license   LICENSE.txt
  */
 
@@ -50,7 +50,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.2';
+        $this->version = '1.5.3';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -463,9 +463,6 @@ class Tpay extends PaymentModule
     public function hookPayment($returnPayments = false)
     {
         $currency = $this->context->currency;
-
-        $this->context->controller->addCss($this->_path . 'views/css/style.css');
-
         if (!$this->active || TPAY_PS_17) {
             return false;
         }
@@ -507,6 +504,7 @@ class Tpay extends PaymentModule
         if (!empty($surcharge)) {
             $this->smarty->assign('surcharge', $surcharge);
         }
+        $this->context->controller->addCSS(_PS_MODULE_DIR_ . 'tpay/views/css/hookPaymentTpay.css', 'all');
 
         return $this->display(__FILE__, 'payment.tpl');
     }

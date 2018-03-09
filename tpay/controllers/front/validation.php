@@ -35,7 +35,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     {
         $this->displayPrecision = (int)Configuration::get('PS_PRICE_DISPLAY_PRECISION');
         $this->display_column_left = false;
-        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style2.css');
+        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
         $cart = $this->context->cart;
         $customer = new Customer($cart->id_customer);
         $paymentType = Tools::getValue('type');
