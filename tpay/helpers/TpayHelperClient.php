@@ -186,4 +186,10 @@ class TpayHelperClient extends Helper
 
         return $surcharge;
     }
+
+    public static function getTpayFeeProductId()
+    {
+        return (int)Configuration::get('TPAY_FEE_PRODUCT_ID');
+    }
+
 }

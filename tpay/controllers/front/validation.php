@@ -49,7 +49,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         }
         $this->paymentType = $paymentType;
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
-        $this->checkIfSurcharge($orderTotal);
+        $this->setOrderTotal($orderTotal);
         $language = $this->context->language->iso_code === 'pl' ? 'pl' : 'en';
         $this->Util = (new Util)->setLanguage($language)->setPath(_MODULE_DIR_ . 'tpay/tpayLibs/src/');
         try {
@@ -120,7 +120,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     /**
      * @param $orderTotal
      */
-    private function checkIfSurcharge($orderTotal)
+    private function setOrderTotal($orderTotal)
     {
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
         if (!empty($surcharge)) {

@@ -30,8 +30,6 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private $tpayClientConfig;
 
-    private $currentOrderId;
-
     private $tpayPaymentId;
 
     /**
@@ -46,17 +44,27 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $cart = $this->context->cart;
         $currency = $this->context->currency;
         $customer = new Customer($cart->id_customer);
+        if (!Validate::isLoadedObject($customer)) {
+            Tools::redirect('index.php?controller=order&step=1');
+        }
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
-
         $crc_sum = md5($cart->id . $this->context->cookie->mail . $customer->secure_key . time());
-
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
         if (!empty($surcharge)) {
-            $orderTotal += $surcharge;
+            $feeProductId = TpayHelperClient::getTpayFeeProductId();
+            $feeProduct = new Product($feeProductId, true);
+            $feeProduct->price = $surcharge;
+            $feeProduct->save();
+            $feeProduct->flushPriceCache();
+            if (!$cart->containsProduct($feeProductId)) {
+                $cart->updateQty(1, $feeProductId);
+                $cart->update();
+                $cart->getPackageList(true);
+                $orderTotal += $surcharge;
+            }
         } else {
             $surcharge = 0.0;
         }
-
         $this->module->validateOrder(
             (int)$cart->id,
             (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?
@@ -69,22 +77,20 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             false,
             $customer->secure_key
         );
-        $orderId = OrderCore::getOrderByCartId($cart->id);
-        $this->currentOrderId = $orderId;
+        $orderId = $this->module->currentOrder;
         $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crc_sum;
         $type = Tools::getValue('type');
         $installments = $type === TPAY_PAYMENT_INSTALLMENTS ? true : false;
-
         $paymentType = $type === TPAY_PAYMENT_INSTALLMENTS || $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
-
         /*
          * Insert order to db
          */
         TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
-        $this->initBasicClient($installments);
+        $this->initBasicClient($installments, $cart, $customer);
         $this->context->cookie->last_order = $orderId;
+        unset($this->context->cookie->id_cart);
         if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
             $this->processCardPayment($orderId);
         } else {
@@ -93,18 +99,13 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     }
 
-    private function initBasicClient($installments)
+    private function initBasicClient($installments, $cart, $customer)
     {
-        $cart = $this->context->cart;
-        $customer = new Customer($cart->id_customer);
-        if (!Validate::isLoadedObject($customer)) {
-            Tools::redirect('index.php?controller=order&step=1');
-        }
         $baseUrl = Tools::getHttpHost(true) . __PS_BASE_URI__;
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
-            'opis' => 'Zamówienie nr ' . $this->currentOrderId . '. Klient ' .
+            'opis' => 'Zamówienie nr ' . $this->module->currentOrder . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
             'pow_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
                 (int)$cart->id.'&id_module=' . (int)$this->module->id . '&id_order=' . $this->module->currentOrder .

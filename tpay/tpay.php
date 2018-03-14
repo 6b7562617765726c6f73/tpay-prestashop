@@ -43,6 +43,7 @@ class Tpay extends PaymentModule
     const LOGO_PATH = 'tpay/views/img/tpay_logo.png';
     const BANK_ON_SHOP = 'TPAY_BANK_ON_SHOP';
     const CHECK_PROXY = 'TPAY_CHECK_PROXY';
+
     /**
      * Basic moudle info.
      */
@@ -50,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.3';
+        $this->version = '1.5.4';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -114,6 +115,9 @@ class Tpay extends PaymentModule
 
         if (!$this->registerHook('displayProductButtons')) {
             $this->_errors[] = $this->l('Error adding tpay logo');
+        }
+        if (!$this->addTpayFeeProduct()) {
+            $this->_errors[] = $this->l('Error adding fee product');
         }
         $this->registerHook('paymentReturn');
         $this->registerHook('displayOrderDetail');
@@ -250,7 +254,13 @@ class Tpay extends PaymentModule
                 );
             }
         }
+
         return true;
+    }
+
+    private function setValue($name, $value)
+    {
+        Configuration::updateValue($name, $value);
     }
 
     /**
@@ -260,6 +270,8 @@ class Tpay extends PaymentModule
      */
     public function uninstall()
     {
+        $product = new Product(TpayHelperClient::getTpayFeeProductId());
+        $product->delete();
         return !parent::uninstall() || !Configuration::deleteByName('tpay') ? false : true;
     }
 
@@ -350,12 +362,8 @@ class Tpay extends PaymentModule
             $output .= $this->displayConfirmation($this->l('Settings saved'));
         }
         include_once(dirname(__FILE__) . '/views/templates/admin/configuration.tpl');
-        return $output . $this->displayForm();
-    }
 
-    private function setValue($name, $value)
-    {
-        Configuration::updateValue($name, $value);
+        return $output . $this->displayForm();
     }
 
     /**
@@ -422,7 +430,7 @@ class Tpay extends PaymentModule
         foreach ($orderStatesData as $state) {
             array_push($orderStates, array(
                 'id_option' => $state['id_order_state'],
-                'name'      => $state['name']
+                'name' => $state['name']
             ));
         }
 
@@ -450,6 +458,7 @@ class Tpay extends PaymentModule
                 $config[$key . $i] = Configuration::get($key . $i);
             }
         }
+
         return $config;
     }
 
@@ -466,7 +475,10 @@ class Tpay extends PaymentModule
         if (!$this->active || TPAY_PS_17) {
             return false;
         }
+        $feeProductId = TpayHelperClient::getTpayFeeProductId();
         $cart = $this->context->cart;
+        $cart->updateQty(0, $feeProductId);
+        $cart->update();
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $availablePayments = array();
 
@@ -495,9 +507,9 @@ class Tpay extends PaymentModule
         }
 
         $this->smarty->assign(array(
-            'this_path'     => $this->_path,
+            'this_path' => $this->_path,
             'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/',
-            'payments'      => $availablePayments,
+            'payments' => $availablePayments,
         ));
 
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
@@ -516,13 +528,14 @@ class Tpay extends PaymentModule
             'validation',
             array('type' => $paymentType)
         );
+
         return array(
-            'type'        => $paymentType,
+            'type' => $paymentType,
             'paymentLink' => $paymentLink,
-            'title'       => $this->l($label),
-            'cta_text'    => $this->l($label),
-            'logo'        => _MODULE_DIR_ . 'tpay/views/img/logo.png',
-            'action'      => $this->context->link->getModuleLink(
+            'title' => $this->l($label),
+            'cta_text' => $this->l($label),
+            'logo' => _MODULE_DIR_ . 'tpay/views/img/logo.png',
+            'action' => $this->context->link->getModuleLink(
                 $this->name,
                 'validation',
                 array('type' => $paymentType),
@@ -570,10 +583,10 @@ class Tpay extends PaymentModule
         }
         foreach ($availablePayments as $key => $value) {
             $this->smarty->assign(array(
-                'this_path'     => $this->_path,
+                'this_path' => $this->_path,
                 'this_path_ssl' => Tools::getShopDomainSsl(true,
                         true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/',
-                'payments'      => $availablePayments[$key],
+                'payments' => $availablePayments[$key],
             ));
             $this->context->cookie->last_order = false;
             $this->context->cookie->__unset('last_order');
@@ -598,12 +611,12 @@ class Tpay extends PaymentModule
     private function getPaymentData($type, $title, $paymentLinkAction = 'payment')
     {
         return [
-            'type'        => $type,
+            'type' => $type,
             'paymentLink' => $this->context->link->getModuleLink('tpay', $paymentLinkAction, array('type' => $type)),
-            'title'       => $title,
-            'cta_text'    => $title,
-            'logo'        => _MODULE_DIR_ . static::LOGO_PATH,
-            'action'      => $this->context->link->getModuleLink($this->name, 'validation', array('type' => $type),
+            'title' => $title,
+            'cta_text' => $title,
+            'logo' => _MODULE_DIR_ . static::LOGO_PATH,
+            'action' => $this->context->link->getModuleLink($this->name, 'validation', array('type' => $type),
                 true),
         ];
     }
@@ -644,6 +657,35 @@ class Tpay extends PaymentModule
 
         return TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/hook/paymentReturn.tpl') :
             $this->display(__FILE__, 'paymentReturn.tpl');
+    }
+
+    private function addTpayFeeProduct()
+    {
+        $product = new Product();
+        $product->name = array((int)Configuration::get('PS_LANG_DEFAULT') =>  'Opłata za płatność online');;
+        $product->link_rewrite = array((int)Configuration::get('PS_LANG_DEFAULT') =>  'tpay-fee');
+        $product->reference = 'TPAY_FEE';
+        $product->id_category = 1;
+        $product->id_category_default = 1;
+        $product->id_tax_rules_group = 0;
+        $product->active = 1;
+        $product->redirect_type = '404';
+        $product->price = 0.01;
+        $product->quantity = 9999999;
+        $product->minimal_quantity = 1;
+        $product->show_price = 1;
+        $product->on_sale = 0;
+        $product->online_only = 1;
+        $product->meta_keywords = 'tpay fee';
+        $product->is_virtual = 1;
+        $product->visibility = 'none';
+        $product->add();
+        $product->addToCategories(array(1));
+        StockAvailable::setQuantity($product->id, null, $product->quantity);
+
+        Configuration::updateValue('TPAY_FEE_PRODUCT_ID', $product->id);
+
+        return true;
     }
 
 }

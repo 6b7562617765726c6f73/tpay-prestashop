@@ -86,9 +86,8 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             if ($orderId === 0) {
                 return false;
             }
-            $surcharge = (float)$orderData['tj_surcharge'];
             $order = new Order($orderId);
-            $orderTotal = round($order->getOrdersTotalPaid() + $surcharge, 2);
+            $orderTotal = (float)number_format($order->getOrdersTotalPaid(), 2, '.', '');
             $orderTotal === (float)number_format($orderRes['tr_paid'], 2, '.', '') ?
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId) :
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
