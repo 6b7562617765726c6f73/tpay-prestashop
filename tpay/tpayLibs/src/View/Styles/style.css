@@ -407,3 +407,19 @@ textarea:-moz-placeholder {
     margin-left: 0.5em;
     cursor: help;
 }
+
+.tpay-pay-button-primary {
+    font: 700 17px/21px Arial, Helvetica, sans-serif;
+    color: #fff;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.2);
+    border: 1px solid #06b2e6;
+    padding: 10px 14px;
+    display: block;
+    background: #009ad0;
+    background-image: linear-gradient(to bottom, #009ad0 0%, #007ab7 100%);
+    background-image: -webkit-linear-gradient(top, #009ad0 0%, #007ab7 100%);
+    background-image: -moz-linear-gradient(top, #009ad0 0%, #007ab7 100%);
+    background: -o-linear-gradient(top, #009ad0 0%, #007ab7 100%);
+    background: -ms-linear-gradient(top, #009ad0 0%, #007ab7 100%);
+    background-repeat: repeat-x;
+}

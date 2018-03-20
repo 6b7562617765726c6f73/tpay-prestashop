@@ -5,7 +5,7 @@
  */
 
 ?>
-    <link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css"/>
+    <link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css?3"/>
     <div class="insidebg" id="blikOneClickForm">
         <center><img src="https://secure.tpay.com/_/banks/b64.png"/><br>
             <form id="tpay-payment" class="tpay-form" action="<?php echo $data['url'] ?>" method="POST"
@@ -16,8 +16,8 @@
                 <input type="text" name="blikcode" value="" maxlength="6" pattern=".{6,}"
                        title="Kod blik powinien składać się z 6 cyfr!" id="blikCode"/>
                 <div>
-                    <input class="button" style="width: 500px ; height:50px"
-                           id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
+                    <input class="<?php TPAY_PS_17 ? print_r('btn btn-primary') : print_r('tpay-pay-button-primary'); ?>
+                          " id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
                 </div>
             </form>
         </center>
