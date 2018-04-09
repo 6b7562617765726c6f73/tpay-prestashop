@@ -488,7 +488,7 @@ class Tpay extends PaymentModule
         $installmentsActive = (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
         if ($basicActive === 1 && $currency->iso_code === 'PLN') {
             $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_BASIC, 'Pay by online transfer with tpay.com');
-            if ($installmentsActive === 1 && $orderTotal >= 300) {
+            if ($installmentsActive === 1 && $orderTotal >= 300 && $orderTotal <= 4730) {
                 $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_INSTALLMENTS,
                     'Pay by installments with tpay');
             }
