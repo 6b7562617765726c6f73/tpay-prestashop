@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.4';
+        $this->version = '1.5.5';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -661,9 +661,11 @@ class Tpay extends PaymentModule
 
     private function addTpayFeeProduct()
     {
+        $psLang = (int)Configuration::get('PS_LANG_DEFAULT');
         $product = new Product();
-        $product->name = array((int)Configuration::get('PS_LANG_DEFAULT') =>  'Opłata za płatność online');;
-        $product->link_rewrite = array((int)Configuration::get('PS_LANG_DEFAULT') =>  'tpay-fee');
+        $product->name = array($psLang =>  'Opłata za płatność online');
+        $product->description = array($psLang =>  'Produkt dodawany do zamówień z prowizją.');
+        $product->link_rewrite = array($psLang =>  'tpay-fee');
         $product->reference = 'TPAY_FEE';
         $product->id_category = 1;
         $product->id_category_default = 1;

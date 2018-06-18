@@ -25,14 +25,17 @@ require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
  */
 class TpayValidationModuleFrontController extends ModuleFrontController
 {
+    public $ssl = true;
     private $tpayClientConfig = array();
     private $paymentType = false;
     private $installments = false;
     private $displayPrecision;
     private $Util;
 
-    public function postProcess()
+    public function initContent()
     {
+        parent::initContent();
+
         $this->displayPrecision = (int)Configuration::get('PS_PRICE_DISPLAY_PRECISION');
         $this->display_column_left = false;
         $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css?3');

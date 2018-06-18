@@ -26,6 +26,8 @@ require_once _PS_MODULE_DIR_ . 'tpay/tpayModel.php';
  */
 class TpayPaymentModuleFrontController extends ModuleFrontController
 {
+    public $ssl = true;
+
     const TPAY_URL = 'https://secure.tpay.com';
 
     private $tpayClientConfig;
@@ -39,9 +41,14 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        parent::initContent();
+
         $this->statusHandler = new TpayOrderStatusHandler();
         $this->display_column_left = false;
         $cart = $this->context->cart;
+        if (empty($cart->id)) {
+            exit('Cart Id is empty!');
+        }
         $currency = $this->context->currency;
         $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
@@ -50,19 +57,28 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $crc_sum = md5($cart->id . $this->context->cookie->mail . $customer->secure_key . time());
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
-        if (!empty($surcharge)) {
+        if (is_float($surcharge)) {
             $feeProductId = TpayHelperClient::getTpayFeeProductId();
             $feeProduct = new Product($feeProductId, true);
             $feeProduct->price = $surcharge;
-            $feeProduct->save();
+            $saveResult = $feeProduct->save();
+            Util::logLine(sprintf('CartId %s', $cart->id));
+            Util::logLine(sprintf('Calculated surcharge value %s. Saving Tpay fee price result %s',
+                $surcharge, $saveResult));
             $feeProduct->flushPriceCache();
             if (!$cart->containsProduct($feeProductId)) {
-                $cart->updateQty(1, $feeProductId);
-                $cart->update();
+                Util::logLine('Cart does not contain fee product.');
+                $updateQtyResult = $cart->updateQty(1, $feeProductId);
+                $updateCartResult = $cart->update();
+                Util::logLine(sprintf('Update qty result %s', $updateQtyResult));
+                Util::logLine(sprintf('Update cart result %s', $updateCartResult));
                 $cart->getPackageList(true);
                 $orderTotal += $surcharge;
+            } else {
+                Util::logLine('Cart already contain fee product.');
             }
         } else {
+            Util::logLine(sprintf('No surcharge for this order. Surcharge value: %s', $surcharge));
             $surcharge = 0.0;
         }
         $this->module->validateOrder(
@@ -78,12 +94,13 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $customer->secure_key
         );
         $orderId = $this->module->currentOrder;
+        Util::logLine(sprintf('OrderId %s', $orderId));
         $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crc_sum;
         $type = Tools::getValue('type');
-        $installments = $type === TPAY_PAYMENT_INSTALLMENTS ? true : false;
-        $paymentType = $type === TPAY_PAYMENT_INSTALLMENTS || $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
+        $installments = $type === TPAY_PAYMENT_INSTALLMENTS;
+        $paymentType = $installments || $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
         /*
          * Insert order to db
          */
@@ -96,7 +113,6 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         } else {
             $this->redirectToPayment();
         }
-
     }
 
     private function initBasicClient($installments, $cart, $customer)
@@ -138,6 +154,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 unset($this->tpayClientConfig[$key]);
             }
         }
+        Util::log('Tpay order parameters', print_r($this->tpayClientConfig, true));
     }
 
     private function processCardPayment($orderId)
@@ -191,6 +208,11 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
             $tpayBasicClient = TpayHelperClient::getBasicClient();
+            $language = $this->context->language->iso_code;
+            if ($language !== 'pl') {
+                $language = 'en';
+            }
+            (new Util)->setLanguage($language);
             if (TPAY_PS_17) {
                 $this->setTemplate(TPAY_17_PATH . '/redirect.tpl');
                 echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true);
