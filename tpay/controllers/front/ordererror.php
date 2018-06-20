@@ -26,10 +26,23 @@ class TpayOrderErrorModuleFrontController extends ModuleFrontController
         $this->cartId = 0;
         $this->context->controller->addCss(_MODULE_DIR_.'tpay/views/css/style.css');
         $this->display_column_left = false;
-
-
         parent::initContent();
-        TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH . '/orderError17.tpl') : $this->setTemplate('orderError.tpl');
+
+        $orderId = Tools::getValue('orderId');
+        $order = new Order($orderId);
+        $payments = $order->getOrderPayments();
+        $currency = new Currency($order->id_currency);
+        if ($order->module !== 'tpay' || !empty($payments) || (int)$currency->iso_code_num !== 985) {
+            TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH.'/orderError17.tpl') : $this->setTemplate('orderError.tpl');
+        } else {
+            $this->context->smarty->assign(array(
+                    'tpayUrl' => $this->context->link->getModuleLink(
+                        'tpay', 'renewPayment', array('orderId' => $orderId)),
+                )
+            );
+            TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH.'/orderErrorWithRenew17.tpl') :
+                $this->setTemplate('../hook/renew.tpl');
+        }
     }
 
     private function emptyCart()

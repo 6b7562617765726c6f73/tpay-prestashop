@@ -41,10 +41,10 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        $this->display_column_left = false;
         parent::initContent();
 
         $this->statusHandler = new TpayOrderStatusHandler();
-        $this->display_column_left = false;
         $cart = $this->context->cart;
         if (empty($cart->id)) {
             exit('Cart Id is empty!');
@@ -126,7 +126,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             'pow_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
                 (int)$cart->id.'&id_module=' . (int)$this->module->id . '&id_order=' . $this->module->currentOrder .
                 '&key='.$customer->secure_key . '&status=success',
-            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error'),
+            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error').
+                '?orderId='.$this->module->currentOrder,
             'email' => $this->context->cookie->email,
             'imie' => $billingAddress->firstname,
             'nazwisko' => $billingAddress->lastname,
@@ -182,7 +183,6 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $cardData);
 
         if (isset($response['result']) && (int)$response['result'] === 1) {
-
             $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])->setOrderID('')
                 ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
                     $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');

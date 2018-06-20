@@ -659,6 +659,27 @@ class Tpay extends PaymentModule
             $this->display(__FILE__, 'paymentReturn.tpl');
     }
 
+    public function hookDisplayOrderDetail($params)
+    {
+        if (!$this->active) {
+            return;
+        }
+        $orderId = $params['order']->id;
+        $order = new Order($orderId);
+        $payments = $order->getOrderPayments();
+        $currency = new Currency($order->id_currency);
+        if ($order->module !== 'tpay' || !empty($payments) || (int)$currency->iso_code_num !== 985) {
+            return;
+        }
+        $this->context->smarty->assign(array(
+                'tpayUrl' => $this->context->link->getModuleLink('tpay', 'renewPayment', array('orderId' => $orderId)),
+            )
+        );
+
+        return TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/hook/renew.tpl') :
+            $this->display(__FILE__, 'renew.tpl');
+    }
+
     private function addTpayFeeProduct()
     {
         $psLang = (int)Configuration::get('PS_LANG_DEFAULT');
