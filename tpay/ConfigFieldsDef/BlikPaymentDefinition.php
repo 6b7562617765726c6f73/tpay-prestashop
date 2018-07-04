@@ -7,13 +7,13 @@
 return array(
     'form' => array(
         'legend' => array(
-            'title' => $this->l('Settings for blik level 0 payment'),
+            'title' => $this->l('Settings for BLIK payments and refunds'),
             'image' => $this->_path . 'views/img/logo.jpg',
         ),
         'input'  => array(
             array(
                 'type'    => $switch,
-                'label'   => $this->l('Payment active'),
+                'label'   => $this->l('BLIK payments active'),
                 'name'    => 'TPAY_BLIK_ACTIVE',
                 'is_bool' => true,
                 'class'   => 't',
@@ -32,14 +32,14 @@ return array(
             ),
             array(
                 'type'     => 'text',
-                'label'    => $this->l('API key'),
+                'label'    => $this->l('Transactions and refunds API key'),
                 'name'     => 'TPAY_APIKEY',
                 'size'     => 50,
                 'required' => true,
             ),
             array(
                 'type'     => 'text',
-                'label'    => $this->l('API password'),
+                'label'    => $this->l('Transactions and refunds API password'),
                 'name'     => 'TPAY_APIPASS',
                 'size'     => 50,
                 'required' => true,

@@ -13,9 +13,11 @@
  * @license   LICENSE.txt
  */
 
+use tpayLibs\examples\BasicRefundsExample;
 use tpayLibs\examples\BlikExample;
 use tpayLibs\examples\CardBasicForm;
 use tpayLibs\examples\CardNotification;
+use tpayLibs\examples\CardRefundsExample;
 use tpayLibs\examples\TpayBasicExample;
 use tpayLibs\examples\TransactionNotification;
 
@@ -66,6 +68,21 @@ class TpayHelperClient extends Helper
     }
 
     /**
+     * Returns transaction api tpay client.
+     *
+     * @return BasicRefundsExample
+     */
+    public static function getRefundsApiClient()
+    {
+        $merchantId = (int)Configuration::get('TPAY_ID');
+        $merchantSecret = Configuration::get('TPAY_KEY');
+        $apiKey = Configuration::get('TPAY_APIKEY');
+        $apiPass = Configuration::get('TPAY_APIPASS');
+
+        return new BasicRefundsExample($apiKey, $apiPass, $merchantId, $merchantSecret);
+    }
+
+    /**
      * Returns card tpay client.
      *
      * @param $midId
@@ -80,6 +97,17 @@ class TpayHelperClient extends Helper
         $keyRSA = Configuration::get('TPAY_CARD_RSA' . $midId);
 
         return new CardBasicForm($apiKey, $apiPass, $verificationCode, $hashType, $keyRSA);
+    }
+
+    public static function getCardRefundsClient($midId)
+    {
+        $apiKey = Configuration::get('TPAY_CARD_KEY' . $midId);
+        $apiPass = Configuration::get('TPAY_CARD_PASS' . $midId);
+        $verificationCode = Configuration::get('TPAY_CARD_CODE' . $midId);
+        $hashType = Configuration::get('TPAY_CARD_HASH' . $midId);
+        $keyRSA = Configuration::get('TPAY_CARD_RSA' . $midId);
+
+        return new CardRefundsExample($apiKey, $apiPass, $verificationCode, $hashType, $keyRSA);
     }
 
     public static function getCardValidator($midId)

@@ -10,6 +10,7 @@ namespace tpayLibs\src\_class_tpay\Refunds;
 
 use tpayLibs\src\_class_tpay\Utilities\TException;
 use tpayLibs\src\_class_tpay\TransactionApi;
+use tpayLibs\src\_class_tpay\Utilities\Util;
 
 class BasicRefunds extends TransactionApi
 {
@@ -23,6 +24,8 @@ class BasicRefunds extends TransactionApi
     public function refund()
     {
         $url = $this->apiURL . $this->trApiKey . '/chargeback/transaction';
+
+        Util::log('Basic refund request', print_r($this->transactionID, true));
 
         $response = $this->requests($url, array(static::TITLE => $this->transactionID));
 
@@ -48,6 +51,8 @@ class BasicRefunds extends TransactionApi
             static::TITLE       => $this->transactionID,
             'chargeback_amount' => $amount,
         );
+        Util::log('Basic refund any request', print_r($postData, true));
+
         $response = $this->requests($url, $postData);
 
         $this->checkError($response);

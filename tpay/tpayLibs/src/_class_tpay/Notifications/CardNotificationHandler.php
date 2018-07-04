@@ -51,7 +51,8 @@ class CardNotificationHandler extends PaymentCard
                 CardDictionary::SIGN      => $response[CardDictionary::SIGN],
                 CardDictionary::SALE_AUTH => $response[CardDictionary::SALE_AUTH],
                 'date'                    => $response['date'],
-                'card'                    => $response['card']
+                'card'                    => $response['card'],
+                'currency'                => $response['currency'],
             );
             if (isset($response[CardDictionary::TEST_MODE])) {
                 $resp[CardDictionary::TEST_MODE] = $response[CardDictionary::TEST_MODE];

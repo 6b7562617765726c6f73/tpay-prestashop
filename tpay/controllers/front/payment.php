@@ -34,6 +34,8 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private $tpayPaymentId;
 
+    private $midId = 11;
+
     /**
      * @var TpayOrderStatusHandler
      */
@@ -81,6 +83,10 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             Util::logLine(sprintf('No surcharge for this order. Surcharge value: %s', $surcharge));
             $surcharge = 0.0;
         }
+        if ($cart->OrderExists() === true) {
+            die($this->trans('Cart cannot be loaded or an order has already been placed using this cart', array(),
+                'Admin.Payment.Notification'));
+        }
         $this->module->validateOrder(
             (int)$cart->id,
             (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?
@@ -104,7 +110,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         /*
          * Insert order to db
          */
-        TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge);
+        $this->midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
+            _PS_BASE_URL_ . __PS_BASE_URI__);
+        TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge, $this->midId);
         $this->initBasicClient($installments, $cart, $customer);
         $this->context->cookie->last_order = $orderId;
         unset($this->context->cookie->id_cart);
@@ -160,9 +168,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private function processCardPayment($orderId)
     {
-        $midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
-            _PS_BASE_URL_ . __PS_BASE_URI__);
-        $tpayCardClient = TpayHelperClient::getCardClient($midId);
+        $tpayCardClient = TpayHelperClient::getCardClient($this->midId);
 
         $cardData = Util::post('carddata', FieldsConfigDictionary::STRING);
         $clientName = $this->tpayClientConfig['nazwisko'];
@@ -175,7 +181,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
         $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])
             ->setCurrency($this->context->currency->iso_code_num)
-            ->setOrderID($midId . '*tpay*' . $this->tpayClientConfig['crc']);
+            ->setOrderID($this->midId . '*tpay*' . $this->tpayClientConfig['crc']);
         $tpayCardClient->setLanguage($this->context->language->iso_code)
             ->setReturnUrls($this->tpayClientConfig['pow_url'], $this->tpayClientConfig['pow_url_blad'])
             ->setModuleName('prestashop ' . _PS_VERSION_);

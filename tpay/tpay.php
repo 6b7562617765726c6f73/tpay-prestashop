@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.5.5';
+        $this->version = '1.6.0';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -105,8 +105,12 @@ class Tpay extends PaymentModule
             $this->_errors[] = $this->l('Error adding payment methods');
         }
 
-        if (!TpayModel::createTable()) {
-            $this->_errors[] = $this->l('Error creating table');
+        if (!TpayModel::createOrdersTable()) {
+            $this->_errors[] = $this->l('Error creating orders table');
+        }
+
+        if (!TpayModel::createRefundsTable()) {
+            $this->_errors[] = $this->l('Error creating refunds table');
         }
 
         if (!$this->addOrderStates()) {
@@ -118,6 +122,9 @@ class Tpay extends PaymentModule
         }
         if (!$this->addTpayFeeProduct()) {
             $this->_errors[] = $this->l('Error adding fee product');
+        }
+        if (!$this->registerHook('adminOrder')) {
+            $this->_errors[] = $this->l('Error refunds hook');
         }
         $this->registerHook('paymentReturn');
         $this->registerHook('displayOrderDetail');
@@ -282,7 +289,6 @@ class Tpay extends PaymentModule
     {
         $output = null;
         $errors = false;
-
         if (Tools::isSubmit('submit' . $this->name)) {
             $basicActive = (int)Tools::getValue('TPAY_BASIC_ACTIVE');
             $blikActive = (int)Tools::getValue('TPAY_BLIK_ACTIVE');
@@ -641,6 +647,54 @@ class Tpay extends PaymentModule
         return $this->display(__FILE__, 'paymentlogo.tpl', $this->getCacheId());
     }
 
+    public function hookAdminOrder($params)
+    {
+        if (!$this->active) {
+            return;
+        }
+        $orderId = $params['id_order'];
+        $order = new Order($orderId);
+        $payment = new OrderPayment();
+        $paymentTpay = $payment::getByOrderReference($order->reference);
+        if (strcasecmp($order->payment, 'Tpay') === 0 && isset($paymentTpay[0])) {
+            $maxRefundAmount = (float)$paymentTpay[0]->amount;
+            $refundAmount = Tools::getValue('tpay_refund_amount');
+            if ($refundAmount !== false && $this->isValidRefundAmount($refundAmount, $maxRefundAmount) === true) {
+                $refundAmount = number_format(str_replace(array(',', ' '), array('.', ''), (float)$refundAmount), 2,
+                    '.', '');
+                $transactionId = $paymentTpay[0]->transaction_id;
+                $paymentType = TpayModel::getPaymentType($orderId);
+                try {
+                    $result = $this->processRefund(
+                        $transactionId, $refundAmount, $maxRefundAmount, $orderId, $paymentType);
+                    if (isset($result['result']) && $result['result'] === 1) {
+                        TpayModel::insertRefund($orderId, $transactionId, $refundAmount);
+                        $this->context->smarty->assign(array(
+                            'tpay_refund_status' => $this->displayConfirmation($this->l('Refund done successfully.')),
+                        ));
+                    }
+                    if (isset($result['err_code'])) {
+                        $this->context->smarty->assign(array(
+                            'tpay_refund_status' => $this->displayError(
+                                sprintf($this->l('error %s'), $result['err_code'])),
+                        ));
+                    }
+                } catch (Exception $TException) {
+                    $errorMessagePosition = strpos($TException->getMessage(), ' in file');
+
+                    $this->context->smarty->assign(array(
+                        'tpay_refund_status' => $this->displayError(
+                            substr($TException->getMessage(), 0, $errorMessagePosition))
+                    ));
+                }
+            }
+            $this->setOrderRefunds($orderId);
+
+            return $this->display(__FILE__, 'refunds.tpl');
+        }
+        return;
+    }
+
     public function hookPaymentReturn($params)
     {
         if (!$this->active) {
@@ -680,6 +734,46 @@ class Tpay extends PaymentModule
             $this->display(__FILE__, 'renew.tpl');
     }
 
+    private function isValidRefundAmount($refundAmount, $maxRefundAmount)
+    {
+        $refundAmount = number_format(str_replace(array(',', ' '), array('.', ''), (float)$refundAmount), 2, '.', '');
+        $error = null;
+        if ($refundAmount > $maxRefundAmount) {
+            //assign to smarty
+            $error = sprintf($this->l('amount is greater than allowed %s'), $maxRefundAmount);
+        }
+        if ($refundAmount <= 0) {
+            $error = $this->l('invalid amount');
+        }
+        if (!is_null($error)) {
+            $this->context->smarty->assign(array(
+                'tpay_refund_status' => $this->displayError(sprintf($this->l('Unable to process refund - %s'), $error)),
+            ));
+        }
+
+        return is_null($error);
+    }
+
+    private function processRefund($transactionId, $refundAmount, $maxRefundAmount, $orderId, $paymentType = 'basic')
+    {
+        if ($paymentType === 'card') {
+            $paymentMidId = TpayModel::getPaymentMidId($orderId);
+            $cardRefunds = TpayHelperClient::getCardRefundsClient($paymentMidId);
+            $order = new Order($orderId);
+            $currency = new Currency($order->id_currency);
+            $cardRefunds->setAmount($refundAmount)->setCurrency($currency->iso_code_num);
+            $result = $cardRefunds->refund($transactionId, sprintf(
+                $this->l('Card payment refund, order %s'), $order->reference));
+        } else {
+            $basicRefunds = TpayHelperClient::getRefundsApiClient();
+            $basicRefunds->setTransactionID($transactionId);
+            $result = $refundAmount === $maxRefundAmount ? $basicRefunds->refund() :
+                $basicRefunds->refundAny($refundAmount);
+        }
+
+        return $result;
+    }
+
     private function addTpayFeeProduct()
     {
         $psLang = (int)Configuration::get('PS_LANG_DEFAULT');
@@ -709,6 +803,22 @@ class Tpay extends PaymentModule
         Configuration::updateValue('TPAY_FEE_PRODUCT_ID', $product->id);
 
         return true;
+    }
+
+    private function setOrderRefunds($orderId)
+    {
+        $refunds = TpayModel::getOrderRefunds($orderId);
+        $smartyRefunds = [];
+        foreach ($refunds as $refund) {
+            $smartyRefunds[] = [
+                'tpay_refund_date' => $refund['tjr_date'],
+                'tpay_transaction_id' => $refund['tjr_transaction_title'],
+                'tpay_refund_amount' => $refund['tjr_amount'],
+            ];
+        }
+        $this->context->smarty->assign(array(
+            'tpayRefunds' => $smartyRefunds,
+        ));
     }
 
 }

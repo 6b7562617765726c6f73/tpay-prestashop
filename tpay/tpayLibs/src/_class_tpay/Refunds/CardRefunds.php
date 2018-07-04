@@ -9,6 +9,7 @@ namespace tpayLibs\src\_class_tpay\Refunds;
 
 use tpayLibs\src\_class_tpay\CardApi;
 use tpayLibs\src\_class_tpay\Utilities\TException;
+use tpayLibs\src\_class_tpay\Utilities\Util;
 use tpayLibs\src\Dictionaries\CardDictionary;
 
 class CardRefunds extends CardApi
@@ -46,13 +47,12 @@ class CardRefunds extends CardApi
 
         $this->setMethod(CardDictionary::REFUND);
         $params[CardDictionary::METHOD] = CardDictionary::REFUND;
-        $params[CardDictionary::DESC] = $refundDesc;
-
         if (!empty($this->clientAuthCode)) {
             $params[CardDictionary::CLIAUTH] = $this->clientAuthCode;
         } else {
             $params[CardDictionary::SALE_AUTH] = $saleAuthCode;
         }
+        $params[CardDictionary::DESC] = $refundDesc;
         if (!empty($this->amount)) {
             $params[CardDictionary::AMOUNT] = $this->amount;
         }
@@ -60,6 +60,8 @@ class CardRefunds extends CardApi
         $params[CardDictionary::LANGUAGE] = $this->lang;
         $params[CardDictionary::SIGN] = hash($this->cardHashAlg, implode('', $params) . $this->cardVerificationCode);
         $params[CardDictionary::APIPASS] = $this->cardApiPass;
+
+        Util::log('Card refund request', print_r($params, true));
 
         return $this->requests($this->cardsApiURL . $this->cardApiKey, $params);
     }
