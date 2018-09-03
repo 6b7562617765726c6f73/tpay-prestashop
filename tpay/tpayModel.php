@@ -143,7 +143,7 @@ class TpayModel extends ObjectModel
      */
     public static function createOrdersTable()
     {
-        $create_sql = 'CREATE TABLE IF NOT EXISTS '._DB_PREFIX_.'tpay (
+        $createSql = 'CREATE TABLE IF NOT EXISTS '._DB_PREFIX_.'tpay (
                           tj_id INT NOT NULL AUTO_INCREMENT,
                           tj_order_id INT NULL,
                           tj_crc VARCHAR(255),
@@ -154,26 +154,19 @@ class TpayModel extends ObjectModel
                       PRIMARY KEY (tj_id)
                       ) ENGINE='._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8';
 
-        $creationResult = Db::getInstance()->execute($create_sql);
-
-        if ($creationResult) {
-            foreach (self::$definition['fields'] as $columnName => $columnParams) {
-                $checkColumn = 'SELECT COUNT(*) FROM information_schema.COLUMNS
-                                WHERE TABLE_SCHEMA = \'' .pSQL(_DB_NAME_).'\'
-                                AND TABLE_NAME = \'' .pSQL(_DB_PREFIX_.self::$definition['table']).'\'
-                                AND COLUMN_NAME = \'' .pSQL($columnName).'\'';
-
-                $checkRes = (bool) (int) Db::getInstance()->getValue($checkColumn);
-
-                if (!$checkRes) {
-                    $alterTable = 'ALTER TABLE '._DB_PREFIX_.pSQL(self::$definition['table']).'
-                                  ADD COLUMN ' .pSQL($columnName).' '.pSQL($columnParams['def']).'';
-
-                    $alterRes = Db::getInstance()->execute($alterTable);
-
-                    if (!$alterRes) {
-                        return false;
-                    }
+        Db::getInstance()->execute($createSql);
+        foreach (self::$definition['fields'] as $columnName => $columnParams) {
+            $checkColumn = 'SELECT COUNT(*) FROM information_schema.COLUMNS
+                                WHERE TABLE_SCHEMA = \''.pSQL(_DB_NAME_).'\'
+                                AND TABLE_NAME = \''.pSQL(_DB_PREFIX_.self::$definition['table']).'\'
+                                AND COLUMN_NAME = \''.pSQL($columnName).'\'';
+            $checkRes = (bool)(int)Db::getInstance()->getValue($checkColumn);
+            if (!$checkRes) {
+                $alterTable = 'ALTER TABLE '._DB_PREFIX_.pSQL(self::$definition['table']).'
+                                  ADD COLUMN '.pSQL($columnName).' '.pSQL($columnParams['def']).'';
+                $alterRes = Db::getInstance()->execute($alterTable);
+                if (!$alterRes) {
+                    return false;
                 }
             }
         }

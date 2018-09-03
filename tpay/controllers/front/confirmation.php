@@ -149,11 +149,9 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             }
             $surcharge = (float)$orderData['tj_surcharge'];
             $order = new Order($orderId);
-            $currency = (new Currency($order->id_currency));
-            $currency = $currency->getCurrency($order->id_currency);
             $orderTotal = round($order->getOrdersTotalPaid() + $surcharge, 2);
             $this->tpayClient->setAmount((double)$orderTotal)
-                ->setCurrency($currency['iso_code_num'])
+                ->setCurrency($orderRes['currency'])
                 ->setOrderID($orderRes['order_id'])
                 ->validateCardSign($orderRes['sign'], $orderRes['sale_auth'], $orderRes['card'],
                     $orderRes['date'], 'correct', isset($orderRes['test_mode']) ? '1' : '');

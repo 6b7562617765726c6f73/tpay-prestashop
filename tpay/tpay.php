@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.0';
+        $this->version = '1.6.1';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -158,7 +158,7 @@ class Tpay extends PaymentModule
         ) {
             $orderState = new OrderState();
 
-            $orderState->name = array_fill(0, 10, 'Waiting for payment (tpay)');
+            $orderState->name = array_fill(0, 10, 'Waiting for payment (Tpay)');
             $orderState->send_email = 0;
             $orderState->invoice = 0;
             $orderState->color = '#5bc0de';
@@ -196,8 +196,8 @@ class Tpay extends PaymentModule
             !Validate::isLoadedObject(new OrderState($doneState))
         ) {
             $orderState = new OrderState();
-            $orderState->name = array_fill(0, 10, 'Payment received (tpay)');
-            $orderState->send_email = false;
+            $orderState->name = array_fill(0, 10, 'Payment received (Tpay)');
+            $orderState->send_email = true;
             $orderState->invoice = true;
             $orderState->color = '#00DE69';
             $orderState->unremovable = false;
@@ -234,7 +234,7 @@ class Tpay extends PaymentModule
             !Validate::isLoadedObject(new OrderState($errorState))
         ) {
             $orderState = new OrderState();
-            $orderState->name = array_fill(0, 10, 'Wrong payment (tpay)');
+            $orderState->name = array_fill(0, 10, 'Wrong payment (Tpay)');
             $orderState->send_email = false;
             $orderState->invoice = false;
             $orderState->color = '#b52b27';
