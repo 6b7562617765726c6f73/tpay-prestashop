@@ -128,8 +128,10 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $baseUrl = Tools::getHttpHost(true) . __PS_BASE_URI__;
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
+        $order = new Order($this->module->currentOrder);
+        $reference = $order->reference;
         $this->tpayClientConfig += array(
-            'opis' => 'Zamówienie nr ' . $this->module->currentOrder . '. Klient ' .
+            'opis' => 'Zamówienie ' . $reference . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
             'pow_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
                 (int)$cart->id.'&id_module=' . (int)$this->module->id . '&id_order=' . $this->module->currentOrder .
@@ -200,7 +202,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             Tools::redirect($response['3ds_url']);
         } else {
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
-            if (Configuration::get('TPAY_CARD_DEBUG') === 1) {
+            if ((int)Configuration::get('TPAY_CARD_DEBUG') === 1) {
                 var_dump($response);
             } else {
                 Tools::redirect($this->tpayClientConfig['pow_url_blad']);
