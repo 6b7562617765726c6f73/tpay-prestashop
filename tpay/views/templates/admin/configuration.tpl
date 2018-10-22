@@ -10,7 +10,6 @@
 
     });
 
-
     function getValuesTpay() {
 
         var tr = $('#fieldset_3_3 .form-wrapper .form-group');

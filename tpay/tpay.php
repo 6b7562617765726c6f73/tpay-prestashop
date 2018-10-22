@@ -367,7 +367,8 @@ class Tpay extends PaymentModule
             }
             $output .= $this->displayConfirmation($this->l('Settings saved'));
         }
-        include_once(dirname(__FILE__) . '/views/templates/admin/configuration.tpl');
+        $output .= TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/admin/configuration.tpl') :
+            $this->display(__FILE__, 'configuration.tpl');
 
         return $output . $this->displayForm();
     }
