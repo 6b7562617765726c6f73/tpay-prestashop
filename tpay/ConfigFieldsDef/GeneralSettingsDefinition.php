@@ -103,7 +103,14 @@ $settings = array(
                     ),
                 ),
             ),
-
+            array(
+                'type'     => 'text',
+                'label'    => $this->l('Notification emails'),
+                'desc'     => $this->l('Set your own notification emails. Type each one separated by comma. Leave empty to use email configured in merchant panel.'),
+                'name'     => 'TPAY_NOTIFICATION_EMAILS',
+                'size'     => 50,
+                'required' => false,
+            ),
             array(
                 'type'    => $switch,
                 'label'   => $this->l('Surcharge for the use of payment'),

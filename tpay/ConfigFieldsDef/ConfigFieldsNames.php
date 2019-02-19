@@ -25,6 +25,7 @@ class ConfigFieldsNames
             'TPAY_SURCHARGE_TYPE',
             'TPAY_SURCHARGE_VALUE',
             'TPAY_BANNER',
+            'TPAY_NOTIFICATION_EMAILS',
             'TPAY_SUMMARY',
             'TPAY_OWN_STATUS',
             'TPAY_OWN_PAID',

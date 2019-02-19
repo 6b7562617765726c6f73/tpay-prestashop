@@ -9,7 +9,7 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    tpay.com
- * @copyright 2010-2018 tpay.com
+ * @copyright 2010-2019 tpay.com
  * @license   LICENSE.txt
  */
 
@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.1';
+        $this->version = '1.6.3';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -296,6 +296,7 @@ class Tpay extends PaymentModule
             $this->setValue('TPAY_BASIC_ACTIVE', $basicActive);
             $this->setValue('TPAY_BLIK_ACTIVE', $blikActive);
             $this->setValue('TPAY_BANNER', (int)Tools::getValue('TPAY_BANNER'));
+            $this->setValue('TPAY_NOTIFICATION_EMAILS', (string)Tools::getValue('TPAY_NOTIFICATION_EMAILS'));
             TPAY_PS_17 ? $this->setValue('TPAY_SUMMARY', 0) :
                 $this->setValue('TPAY_SUMMARY', (int)Tools::getValue('TPAY_SUMMARY'));
             $this->setValue('TPAY_OWN_STATUS', (int)Tools::getValue('TPAY_OWN_STATUS'));

@@ -182,3 +182,5 @@ $_MODULE['<{tpay}prestashop>tpay_6b3422b886b78edc6b5a4f0c367c2f9e'] = 'Ustawieni
 $_MODULE['<{tpay}prestashop>tpay_49d8964e7720caf354a55b6b9705f99e'] = 'Płatności BLIK aktywne';
 $_MODULE['<{tpay}prestashop>tpay_da657b0cc7ec9f491ff3171661cd69e8'] = 'Klucz API transakcji i zwrotów';
 $_MODULE['<{tpay}prestashop>tpay_97f876b50318581c7491a9c045707312'] = 'Hasło API transakcji i zwrotów';
+$_MODULE['<{tpay}prestashop>tpay_a859847374d3955ea3f7b0891b7f98dd'] = 'Adresy email powiadomień';
+$_MODULE['<{tpay}prestashop>tpay_078ca4bddcc6c67c949b014a5ac91a5e'] = 'Wprowadź własne adresy email do powiadomień o transakcjach. Możesz wprowadzić wiele adresów, oddzielając je przecinkiem. Pozostaw puste, by wykorzystać adresy skonfigurowane w panelu sprzedawcy Tpay.';

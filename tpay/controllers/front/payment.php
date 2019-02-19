@@ -154,6 +154,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         ) {
             $this->tpayClientConfig['akceptuje_regulamin'] = 1;
         }
+        if (!empty(Configuration::get('TPAY_NOTIFICATION_EMAILS'))) {
+            $this->tpayClientConfig += array('wyn_email' => Configuration::get('TPAY_NOTIFICATION_EMAILS'));
+        }
         if ((int)Tools::getValue('grupa') > 0) {
             $this->tpayClientConfig += array('grupa' => (int)Tools::getValue('grupa'));
         }
