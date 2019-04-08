@@ -14,7 +14,7 @@ class Polish
 
         // GLOBALS
         'fee_info'      => 'Za korzystanie z płatności online sprzedawca dolicza: ',
-        'pay'           => 'Zapłać z tpay.com',
+        'pay'           => 'Zapłać',
         'merchant_info' => 'Dane sprzedawcy',
         'amount'        => 'Kwota',
         'order'         => 'Zamówienie',

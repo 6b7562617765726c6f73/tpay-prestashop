@@ -40,18 +40,18 @@ define('TPAY_17_PATH', 'module:tpay/views/templates/front');
  */
 class Tpay extends PaymentModule
 {
-    const LOGO_PATH = 'tpay/views/img/tpay_logo.png';
+    const LOGO_PATH = 'tpay/views/img/tpay_logo_230.png';
     const BANK_ON_SHOP = 'TPAY_BANK_ON_SHOP';
     const CHECK_PROXY = 'TPAY_CHECK_PROXY';
 
     /**
-     * Basic moudle info.
+     * Basic module info.
      */
     public function __construct()
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.3';
+        $this->version = '1.6.4';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -101,7 +101,7 @@ class Tpay extends PaymentModule
             if (!$this->registerHook('paymentOptions')) {
                 $this->_errors[] = $this->l('Error adding payment methods');
             }
-        } elseif (!$this->registerHook('payment')) {
+        } elseif (!$this->registerHook('payment') || !$this->registerHook('displayPaymentEU')) {
             $this->_errors[] = $this->l('Error adding payment methods');
         }
 
@@ -552,43 +552,23 @@ class Tpay extends PaymentModule
         );
     }
 
+    public function hookDisplayPaymentEU()
+    {
+        if (!$this->active) {
+            return [];
+        }
+
+        return $this->getActivePayments();
+    }
+
     public function hookPaymentOptions($params)
     {
         if (!$this->active) {
             return;
         }
-
-        $cardActive = (bool)Configuration::get('TPAY_CARD_ACTIVE');
-        $installmentsActive = (bool)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
-        $basicActive = (bool)Configuration::get('TPAY_BASIC_ACTIVE');
-        $blikActive = (bool)Configuration::get('TPAY_BLIK_ACTIVE');
         $paymentLinkAction = 'validation';
-        $currency = $this->context->currency;
-        $cart = $this->context->cart;
-        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
         $options = array();
-        $availablePayments = array();
-
-        if ($basicActive && $currency->iso_code === 'PLN') {
-            $paymentTitle = $this->l('Pay by online transfer with tpay.com');
-            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BASIC, $paymentTitle, $paymentLinkAction);
-
-            if ($installmentsActive && $orderTotal >= 300) {
-                $paymentTitle = $this->l('Pay by installments with tpay.com');
-                $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_INSTALLMENTS, $paymentTitle,
-                    $paymentLinkAction);
-            }
-        }
-        if ($blikActive && $currency->iso_code === 'PLN') {
-            $paymentTitle = $this->l('Pay by blik code with tpay.com');
-            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BLIK, $paymentTitle, $paymentLinkAction);
-        }
-        if ($cardActive && TpayHelperClient::getCardMidNumber($currency->iso_code,
-                _PS_BASE_URL_ . __PS_BASE_URI__)
-        ) {
-            $paymentTitle = $this->l('Pay by credit card with tpay.com');
-            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_CARDS, $paymentTitle, $paymentLinkAction);
-        }
+        $availablePayments = $this->getActivePayments();
         foreach ($availablePayments as $key => $value) {
             $this->smarty->assign(array(
                 'this_path' => $this->_path,
@@ -614,6 +594,42 @@ class Tpay extends PaymentModule
         }
 
         return $options;
+    }
+
+    private function getActivePayments()
+    {
+        $cardActive = (bool)Configuration::get('TPAY_CARD_ACTIVE');
+        $installmentsActive = (bool)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
+        $basicActive = (bool)Configuration::get('TPAY_BASIC_ACTIVE');
+        $blikActive = (bool)Configuration::get('TPAY_BLIK_ACTIVE');
+        $paymentLinkAction = 'validation';
+        $currency = $this->context->currency;
+        $cart = $this->context->cart;
+        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
+        $availablePayments = array();
+
+        if ($basicActive && $currency->iso_code === 'PLN') {
+            $paymentTitle = $this->l('Pay by online transfer with tpay.com');
+            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BASIC, $paymentTitle, $paymentLinkAction);
+
+            if ($installmentsActive && $orderTotal >= 300 && $orderTotal <= 4800) {
+                $paymentTitle = $this->l('Pay by installments with tpay.com');
+                $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_INSTALLMENTS, $paymentTitle,
+                    $paymentLinkAction);
+            }
+        }
+        if ($blikActive && $currency->iso_code === 'PLN') {
+            $paymentTitle = $this->l('Pay by blik code with tpay.com');
+            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BLIK, $paymentTitle, $paymentLinkAction);
+        }
+        if ($cardActive && TpayHelperClient::getCardMidNumber($currency->iso_code,
+                _PS_BASE_URL_ . __PS_BASE_URI__)
+        ) {
+            $paymentTitle = $this->l('Pay by credit card with tpay.com');
+            $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_CARDS, $paymentTitle, $paymentLinkAction);
+        }
+
+        return $availablePayments;
     }
 
     private function getPaymentData($type, $title, $paymentLinkAction = 'payment')

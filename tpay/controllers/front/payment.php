@@ -87,6 +87,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             die($this->trans('Cart cannot be loaded or an order has already been placed using this cart', array(),
                 'Admin.Payment.Notification'));
         }
+        $this->context->smarty->assign(array(
+            'nbProducts' => $cart->nbProducts(),
+        ));
         $this->module->validateOrder(
             (int)$cart->id,
             (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?

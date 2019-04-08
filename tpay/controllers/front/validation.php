@@ -219,6 +219,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             'tplDir'           => $tplDir,
             'nextTpl'          => $nextTpl,
             'paymentForm'      => $paymentForm,
+            'nbProducts'       => $cart->nbProducts(),
         ));
         $this->assignTemplatesPatches();
     }

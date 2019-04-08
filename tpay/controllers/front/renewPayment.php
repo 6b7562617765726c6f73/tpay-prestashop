@@ -31,15 +31,21 @@ class TpayRenewPaymentModuleFrontController extends ModuleFrontController
     {
         $this->display_column_left = false;
         parent::initContent();
-
+        if (is_numeric($this->context->cookie->id_customer)) {
+            $cookieCustomerId = (int)$this->context->cookie->id_customer;
+        } else {
+            $cookieCustomerId = 0;
+        }
         $orderId = (int)Tools::getValue('orderId');
         $order = new Order($orderId);
         $cart = new Cart($order->id_cart);
         $customer = new Customer($cart->id_customer);
-        if ((int)$order->id_customer !== $this->context->customer->id) {
+        if (!Validate::isLoadedObject($customer)) {
             Tools::redirect('index.php?controller=history');
         }
-        if (!Validate::isLoadedObject($customer)) {
+        if ((int)$order->id_customer !== (int)$this->context->customer->id
+            && (int)$order->id_customer !== $cookieCustomerId
+        ) {
             Tools::redirect('index.php?controller=history');
         }
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
@@ -51,6 +57,9 @@ class TpayRenewPaymentModuleFrontController extends ModuleFrontController
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crcSum;
         $this->initBasicClient($cart, $customer, $orderId);
+        $this->context->smarty->assign(array(
+            'nbProducts' => $cart->nbProducts(),
+        ));
         $this->context->cookie->last_order = $orderId;
         unset($this->context->cookie->id_cart);
         $this->redirectToPayment();
