@@ -47,7 +47,9 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     {
         $this->statusHandler = new TpayOrderStatusHandler();
         $paymentType = Tools::getValue('type');
-
+        if (TPAY_PS_17) {
+            $this->setTemplate(TPAY_17_PATH . '/redirect.tpl');
+        }
         switch ($paymentType) {
             case TPAY_PAYMENT_INSTALLMENTS:
             case TPAY_PAYMENT_BASIC:
