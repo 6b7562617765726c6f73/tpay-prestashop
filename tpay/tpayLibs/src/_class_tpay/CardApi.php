@@ -38,7 +38,9 @@ class CardApi extends CardOptions
             CardDictionary::AMOUNT => $this->amount,
         ));
         $params[CardDictionary::CURRENCY] = $this->currency;
-        $params['order_id'] = $this->orderID;
+        if (!empty($this->orderID)) {
+            $params['order_id'] = $this->orderID;
+        }
         if ($this->oneTimer) {
             $params['onetimer'] = $this->oneTimer;
         }
@@ -82,18 +84,18 @@ class CardApi extends CardOptions
      *
      * @throws TException
      */
-    public function presaleMethod(
-        $saleDescription
-    ) {
+    public function presaleMethod($saleDescription) {
         $params = array(
             CardDictionary::AMOUNT   => $this->amount,
             CardDictionary::METHOD   => CardDictionary::PRESALE,
             CardDictionary::CLIAUTH  => $this->clientAuthCode,
             CardDictionary::DESC     => $saleDescription,
             CardDictionary::CURRENCY => $this->currency,
-            CardDictionary::ORDERID  => $this->orderID,
             CardDictionary::LANGUAGE => $this->lang,
         );
+        if (!empty($this->orderID)) {
+            $params[CardDictionary::ORDERID] = $this->orderID;
+        }
         $params[CardDictionary::SIGN] = hash($this->cardHashAlg, CardDictionary::PRESALE . $this->clientAuthCode .
             $saleDescription . $this->amount . $this->currency . $this->orderID . $this->lang .
             $this->cardVerificationCode);
@@ -114,9 +116,7 @@ class CardApi extends CardOptions
      * @return bool|mixed
      * @throws TException
      */
-    public function saleMethod(
-        $saleAuthCode
-    ) {
+    public function saleMethod($saleAuthCode) {
         if (strlen($saleAuthCode) !== 40) {
             throw new TException('invalid sale_auth code');
         }

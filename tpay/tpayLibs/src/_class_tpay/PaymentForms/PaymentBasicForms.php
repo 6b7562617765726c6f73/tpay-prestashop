@@ -30,7 +30,7 @@ class PaymentBasicForms extends BasicPaymentOptions
      * URL to tpay regulations file
      * @var string
      */
-    private $regulationURL = 'https://secure.tpay.com/regulamin.pdf';
+    protected $regulationURL = 'https://secure.tpay.com/regulamin.pdf';
 
     /**
      * Create HTML form for basic panel payment based on transaction config
@@ -39,29 +39,16 @@ class PaymentBasicForms extends BasicPaymentOptions
      * @param array $config transaction config
      *
      * @param bool $redirect redirect automatically
-     * @param string $actionURL
-     * @param bool $showPayButton
-     * @param bool $showRegulations
      * @return string
      */
-    public function getTransactionForm(
-        $config = array(),
-        $redirect = false,
-        $actionURL = null,
-        $showPayButton = true,
-        $showRegulations = false
-    ) {
-        if (!empty($config)) {
-            $config = $this->prepareConfig($config);
-        }
+    public function getTransactionForm($config, $redirect = false)
+    {
+        $config = $this->prepareConfig($config);
 
         $data = array(
-            static::ACTION_URL          => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
-            static::FIELDS              => $config,
-            'redirect'                  => $redirect,
-            'showPayButton'             => (bool)$showPayButton,
-            'regulation_url'            => $this->regulationURL,
-            'show_regulations_checkbox' => $showRegulations,
+            static::ACTION_URL => $this->panelURL,
+            static::FIELDS     => $config,
+            'redirect'         => $redirect,
         );
 
         return Util::parseTemplate(static::PAYMENT_FORM, $data);
@@ -72,6 +59,7 @@ class PaymentBasicForms extends BasicPaymentOptions
      * More information about config fields @see FieldsConfigValidator::$blikPaymentRequestFields
      * @return string
      * @internal param string $alias alias of registered user for One Click transactions
+     *
      */
     public function getBlikSelectionForm()
     {
@@ -82,6 +70,11 @@ class PaymentBasicForms extends BasicPaymentOptions
         return Util::parseTemplate('blikForm', $data);
     }
 
+    /**
+     * Create the simple HTML form with blik input field
+     * @param string $actionURL - form submit destination
+     * @return string
+     */
     public function getBlikBasicForm($actionURL)
     {
         $data = array(
@@ -99,40 +92,31 @@ class PaymentBasicForms extends BasicPaymentOptions
      * @param array $config transaction config
      * @param bool $smallList type of bank selection list big icons or small form with select
      * @param bool $showRegulations show accept regulations input
-     *
      * @param string $actionURL sets non default action URL of form
-     * @param bool $showPayButton
      * @return string
-     * @internal param bool $hasConfig sets if validate config at this point
      */
-    public function getBankSelectionForm(
-        $config = array(),
-        $smallList = false,
-        $showRegulations = true,
-        $actionURL = null,
-        $showPayButton = true
-    ) {
+    public function getBankSelectionForm($config = array(), $smallList = false, $showRegulations = true,
+        $actionURL = null)
+    {
         if (!empty($config)) {
             $config = $this->prepareConfig($config);
         }
-        $config['grupa'] = 0;
-        $config['akceptuje_regulamin'] = ($showRegulations) ? 0 : 1;
+        $config['group'] = 0;
+        $config['accept_tos'] = 0;
 
         $data = array(
-            static::ACTION_URL          => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
-            static::FIELDS              => $config,
-            'redirect'                  => false,
-            'showPayButton'             => (bool)$showPayButton,
-            'regulation_url'            => $this->regulationURL,
-            'show_regulations_checkbox' => $showRegulations,
+            static::ACTION_URL => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
+            static::FIELDS     => $config,
+            'redirect'         => false,
         );
 
         $form = Util::parseTemplate(static::PAYMENT_FORM, $data);
 
-        $data += array(
-            'merchant_id'    => $this->merchantId,
-            'regulation_url' => $this->regulationURL,
-            'form'           => $form
+        $data = array(
+            'merchant_id'               => $this->merchantId,
+            'regulation_url'            => $this->regulationURL,
+            'show_regulations_checkbox' => $showRegulations,
+            'form'                      => $form
         );
         if ($smallList) {
             $templateFile = 'bankSelectionList';
@@ -141,4 +125,22 @@ class PaymentBasicForms extends BasicPaymentOptions
         }
         return Util::parseTemplate($templateFile, $data);
     }
+    /**
+     * Returns the bank choice form without any payment buttons. Useful for gathering bank choice information.
+     * @param bool $onlineOnly show only banks booking online
+     * @param bool $showRegulations show Tpay terms and conditions checkbox
+     * @return string
+     */
+    public function getSimpleBankList($onlineOnly = false, $showRegulations = true)
+    {
+        $data = [
+            'merchant_id' => $this->merchantId,
+            'online_only' => (int)$onlineOnly,
+            'show_regulations_checkbox' => $showRegulations,
+            'regulation_url' => $this->regulationURL,
+        ];
+
+        return Util::parseTemplate('bankSelectionSimple', $data);
+    }
+
 }

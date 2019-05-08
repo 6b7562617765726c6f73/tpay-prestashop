@@ -8,7 +8,6 @@
 
 namespace tpayLibs\src\_class_tpay\PaymentForms;
 
-
 use tpayLibs\src\_class_tpay\PaymentCard;
 use tpayLibs\src\_class_tpay\Utilities\TException;
 use tpayLibs\src\_class_tpay\Utilities\Util;
@@ -16,11 +15,6 @@ use tpayLibs\src\Dictionaries\CardDictionary;
 
 class PaymentCardForms extends PaymentCard
 {
-    /**
-     * URL to tpay regulations file
-     * @var string
-     */
-    private $regulationURL = 'https://secure.tpay.com/regulamin.pdf';
     /**
      * tpay payment url
      * @var string
@@ -39,7 +33,6 @@ class PaymentCardForms extends PaymentCard
      */
     public function getTransactionForm($config)
     {
-
         $apiResponse = $this->registerSale(
             $config['name'],
             $config['email'],
@@ -59,7 +52,6 @@ class PaymentCardForms extends PaymentCard
         $data = array(
             'action_url'              => $this->cardsURL,
             CardDictionary::SALE_AUTH => $apiResponse[CardDictionary::SALE_AUTH],
-            'regulation_url'            => $this->regulationURL,
         );
 
         return Util::parseTemplate('cardPaymentForm', $data);
@@ -69,67 +61,39 @@ class PaymentCardForms extends PaymentCard
      * Get HTML form for direct sale gate. Using for payment in merchant shop
      *
      * @param string $paymentRedirectPath payment redirect path
-     *
-     * @param bool $cardSaveAllowed
+     * @param bool $cardSaveAllowed set true if your want to display the save card checkbox
+     * @param bool $payerFields set true if you want to display the name and email fields in card form.
+     * Otherwise you will need to get those values from your DataBase.
+     * @param array $savedCards list of user saved cards. Must contain id, shortCode and vendor parameters
      * @return string
-     * @throws TException
      */
 
     public function getOnSiteCardForm(
         $paymentRedirectPath = 'index.html',
-        $cardSaveAllowed = true
-    ) {
+        $cardSaveAllowed = true,
+        $payerFields = true,
+        $savedCards = []
+    )
+    {
         $data = array(
             'rsa_key'               => $this->cardKeyRSA,
             'payment_redirect_path' => $paymentRedirectPath,
             'card_save_allowed'     => $cardSaveAllowed,
-            'regulation_url'        => $this->regulationURL,
+            'showPayerFields'       => $payerFields,
+            'userCards'             => $savedCards,
         );
+        $data['new_card_form'] = Util::parseTemplate('gate', $data);
 
-        return Util::parseTemplate('gate', $data);
+        return Util::parseTemplate('savedCardForm', $data);
     }
 
     /**
-     * Get HTML form for saved card transaction. Using for payment in merchant shop
-     *
-     * @param string $cliAuth client auth sign form prev payment
-     * @param string $desc transaction description
-     * @param float $amount amount
-     * @param string $confirmationUrl url to send confirmation
-     * @param string $orderId order id
-     * @param string $language language
-     * @param string $currency currency
-     *
-     * @return string
-     *
-     * @throws TException
+     * @param array $data
+     * @return string HTML input form
      */
-    public function getCardSavedForm(
-        $cliAuth,
-        $desc,
-        $amount,
-        $confirmationUrl,
-        $orderId = '',
-        $language = 'pl',
-        $currency = '985'
-    ) {
-        $this->setAmount($amount)->setCurrency($currency)->setOrderID($orderId)->setLanguage($language);
-
-        $resp = $this->presale($cliAuth, $desc);
-
-        Util::log('Card saved presale response', print_r($resp, true));
-
-        if ((int)$resp[CardDictionary::RESULT] === 1) {
-            $data = array(
-                CardDictionary::SALE_AUTH => $resp[CardDictionary::SALE_AUTH],
-                'confirmation_url'        => $confirmationUrl,
-                CardDictionary::ORDERID   => $orderId
-            );
-
-            return Util::parseTemplate('savedCard', $data);
-        } else {
-            throw new TException('Order data is invalid');
-        }
+    public function getCardPaymentLinkBuilderForm($data)
+    {
+        return Util::parseTemplate('cardLinkBuilder', $data);
     }
 
 }

@@ -2,6 +2,10 @@
 
 global $_MODULE;
 $_MODULE = array();
+$_MODULE['<{tpay}prestashop>tpay_04922ba54597bc0ba880874b837895a5'] = 'Zwrot wykonany pomyślnie.';
+$_MODULE['<{tpay}prestashop>tpay_aa112ea8b5bb977adbf2f959fc1c5791'] = 'Błąd w komunikacji %s';
+$_MODULE['<{tpay}prestashop>tpay_c1425160c4b57619d4d9a722a5913646'] = 'Zwrot nieudany. Przyczyna odrzucenia %s';
+$_MODULE['<{tpay}prestashop>tpay_26d34554a8836b333afadeffe3c6f249'] = 'Zwrot nieudany. Błąd %s';
 $_MODULE['<{tpay}prestashop>tpay_51368092b1ba81910e4f8e1d7d39c795'] = 'Tpay';
 $_MODULE['<{tpay}prestashop>tpay_2396fe033cc25d5ded29929b32d65ae1'] = 'Przyjmowanie płatności online';
 $_MODULE['<{tpay}prestashop>tpay_91ad370e230a248764bed1b84a50d36d'] = 'Usunąć moduł?';

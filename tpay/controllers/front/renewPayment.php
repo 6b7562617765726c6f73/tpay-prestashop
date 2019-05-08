@@ -53,7 +53,7 @@ class TpayRenewPaymentModuleFrontController extends ModuleFrontController
         if ($crcSum === false) {
             Tools::redirect('index.php?controller=history');
         }
-        $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
+        $this->tpayClientConfig['amount'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crcSum;
         $this->initBasicClient($cart, $customer, $orderId);
@@ -87,22 +87,21 @@ class TpayRenewPaymentModuleFrontController extends ModuleFrontController
         $addressInvoiceId = $cart->id_address_invoice;
         $billingAddress = new AddressCore($addressInvoiceId);
         $this->tpayClientConfig += array(
-            'opis' => 'Zamówienie nr '.$orderId.'. Klient '.
+            'description' => 'Zamówienie nr '.$orderId.'. Klient '.
                 $this->context->cookie->customer_firstname.' '.$this->context->cookie->customer_lastname,
-            'pow_url' => $baseUrl.'index.php?controller=order-confirmation&id_cart='.
+            'return_url' => $baseUrl.'index.php?controller=order-confirmation&id_cart='.
                 (int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$orderId.
                 '&key='.$customer->secure_key.'&status=success',
-            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error').'?orderId='.$orderId,
+            'return_error_url' => $this->context->link->getModuleLink('tpay', 'order-error').'?orderId='.$orderId,
             'email' => $this->context->cookie->email,
-            'imie' => $billingAddress->firstname,
-            'nazwisko' => $billingAddress->lastname,
-            'telefon' => $billingAddress->phone,
-            'adres' => $billingAddress->address1,
-            'miasto' => $billingAddress->city,
-            'kod' => $billingAddress->postcode,
-            'wyn_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
+            'name' => sprintf('%s %s', $billingAddress->firstname, $billingAddress->lastname),
+            'phone' => $billingAddress->phone,
+            'address' => $billingAddress->address1,
+            'city' => $billingAddress->city,
+            'zip' => $billingAddress->postcode,
+            'result_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
-            'module' => 'prestashop '._PS_VERSION_,
+            'module' => 'prestashop ' . _PS_VERSION_,
         );
 
         foreach ($this->tpayClientConfig as $key => $value) {

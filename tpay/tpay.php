@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.4';
+        $this->version = '1.6.5';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -612,7 +612,7 @@ class Tpay extends PaymentModule
             $paymentTitle = $this->l('Pay by online transfer with tpay.com');
             $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BASIC, $paymentTitle, $paymentLinkAction);
 
-            if ($installmentsActive && $orderTotal >= 300 && $orderTotal <= 4800) {
+            if ($installmentsActive && $orderTotal >= 300 && $orderTotal <= 9259.25) {
                 $paymentTitle = $this->l('Pay by installments with tpay.com');
                 $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_INSTALLMENTS, $paymentTitle,
                     $paymentLinkAction);
@@ -683,19 +683,40 @@ class Tpay extends PaymentModule
                 $transactionId = $paymentTpay[0]->transaction_id;
                 $paymentType = TpayModel::getPaymentType($orderId);
                 try {
-                    $result = $this->processRefund(
-                        $transactionId, $refundAmount, $maxRefundAmount, $orderId, $paymentType);
-                    if (isset($result['result']) && $result['result'] === 1) {
-                        TpayModel::insertRefund($orderId, $transactionId, $refundAmount);
-                        $this->context->smarty->assign(array(
-                            'tpay_refund_status' => $this->displayConfirmation($this->l('Refund done successfully.')),
-                        ));
-                    }
-                    if (isset($result['err_code'])) {
-                        $this->context->smarty->assign(array(
-                            'tpay_refund_status' => $this->displayError(
-                                sprintf($this->l('error %s'), $result['err_code'])),
-                        ));
+                    if ($paymentType === 'card') {
+                        $result = $this->processCardRefund($transactionId, $refundAmount, $orderId);
+                        if (isset($result['result']) && $result['result'] === 1 && $result['status'] === 'correct') {
+                            TpayModel::insertRefund($orderId, $transactionId, $refundAmount);
+                            $this->context->smarty->assign(array(
+                                'tpay_refund_status' => $this->displayConfirmation($this->l('Refund successful.')),
+                            ));
+                        }
+                        if (isset($result['err_code'])) {
+                            $this->context->smarty->assign(array(
+                                'tpay_refund_status' => $this->displayError(
+                                    sprintf($this->l('Communication error %s'), $result['err_code'])),
+                            ));
+                        }
+                        if (isset($result['reason'])) {
+                            $this->context->smarty->assign(array(
+                                'tpay_refund_status' => $this->displayError(
+                                    sprintf($this->l('Refund error. Reason code %s'), $result['reason'])),
+                            ));
+                        }
+                    } else {
+                        $result = $this->processBasicRefund($transactionId, $refundAmount, $maxRefundAmount);
+                        if (isset($result['result']) && $result['result'] === 1) {
+                            TpayModel::insertRefund($orderId, $transactionId, $refundAmount);
+                            $this->context->smarty->assign(array(
+                                'tpay_refund_status' => $this->displayConfirmation($this->l('Refund successful.')),
+                            ));
+                        }
+                        if (isset($result['err'])) {
+                            $this->context->smarty->assign(array(
+                                'tpay_refund_status' => $this->displayError(
+                                    sprintf($this->l('Refund error %s'), $result['err'])),
+                            ));
+                        }
                     }
                 } catch (Exception $TException) {
                     $errorMessagePosition = strpos($TException->getMessage(), ' in file');
@@ -772,24 +793,26 @@ class Tpay extends PaymentModule
         return is_null($error);
     }
 
-    private function processRefund($transactionId, $refundAmount, $maxRefundAmount, $orderId, $paymentType = 'basic')
+    private function processCardRefund($transactionId, $refundAmount, $orderId)
     {
-        if ($paymentType === 'card') {
-            $paymentMidId = TpayModel::getPaymentMidId($orderId);
-            $cardRefunds = TpayHelperClient::getCardRefundsClient($paymentMidId);
-            $order = new Order($orderId);
-            $currency = new Currency($order->id_currency);
-            $cardRefunds->setAmount($refundAmount)->setCurrency($currency->iso_code_num);
-            $result = $cardRefunds->refund($transactionId, sprintf(
-                $this->l('Card payment refund, order %s'), $order->reference));
-        } else {
-            $basicRefunds = TpayHelperClient::getRefundsApiClient();
-            $basicRefunds->setTransactionID($transactionId);
-            $result = $refundAmount === $maxRefundAmount ? $basicRefunds->refund() :
-                $basicRefunds->refundAny($refundAmount);
-        }
+        $paymentMidId = TpayModel::getPaymentMidId($orderId);
+        $cardRefunds = TpayHelperClient::getCardRefundsClient($paymentMidId);
+        $order = new Order($orderId);
+        $currency = new Currency($order->id_currency);
+        $cardRefunds->setAmount($refundAmount)->setCurrency($currency->iso_code_num);
 
-        return $result;
+        return $cardRefunds->refund(
+            $transactionId,
+            sprintf($this->l('Card payment refund, order %s'), $order->reference)
+        );
+    }
+
+    private function processBasicRefund($transactionId, $refundAmount, $maxRefundAmount)
+    {
+        $basicRefunds = TpayHelperClient::getRefundsApiClient();
+        $basicRefunds->setTransactionID($transactionId);
+
+        return $refundAmount === $maxRefundAmount ? $basicRefunds->refund() : $basicRefunds->refundAny($refundAmount);
     }
 
     private function addTpayFeeProduct()

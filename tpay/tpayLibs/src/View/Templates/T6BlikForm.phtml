@@ -1,46 +1,38 @@
-<?php
-
-/*
- * Created by tpay.com
- */
-
-?>
-    <link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css?3"/>
-    <div class="insidebg" id="blikOneClickForm">
-        <center><img src="https://secure.tpay.com/_/banks/b64.png"/><br>
-            <form id="tpay-payment" class="tpay-form" action="<?php echo $data['url'] ?>" method="POST"
-                  accept-charset="UTF-8"
-                  onsubmit="event.preventDefault(); checkFields()"
-            >
-                <label for="blikcode" class="form_input_label">Wpisz kod blik:</label>
-                <input type="text" name="blikcode" value="" maxlength="6" pattern=".{6,}"
-                       title="Kod blik powinien składać się z 6 cyfr!" id="blikCode"/>
-                <div>
-                    <input class="<?php TPAY_PS_17 ? print_r('btn btn-primary') : print_r('tpay-pay-button-primary'); ?>
-                          " id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
-                </div>
-            </form>
-        </center>
-        <div class="regulations" style="padding-top: 20px; margin-bottom: 20px">
-            <input id="tpay-accept-regulations-checkbox" type="checkbox" name="regulations" value="0">
-            <label for="tpay-accept-regulations-checkbox" id="regulations-label">
-                <?php $lang->l('accept') ?> <a href="<?php echo $data['regulation_url'] ?>"
-                                               target="_blank"><?php $lang->l('regulations_url') ?></a>
-                <?php $lang->l('regulations'); ?>
-            </label>
-        </div>
+<link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css?3"/>
+<div class="insidebg" id="blikOneClickForm">
+    <center><img src="https://secure.tpay.com/_/banks/b64.png"/><br>
+        <form id="tpay-payment" class="tpay-form" action="<?php echo $data['url'] ?>" method="POST"
+              accept-charset="UTF-8"
+              onsubmit="event.preventDefault(); checkFields()"
+        >
+            <label for="blikcode" class="form_input_label">Wpisz kod blik:</label>
+            <input type="text" name="blikcode" value="" maxlength="6" pattern=".{6,}"
+                   title="Kod blik powinien składać się z 6 cyfr!" id="blikCode"/>
+            <div>
+                <input class="<?php TPAY_PS_17 ? print_r('btn btn-primary') : print_r('tpay-pay-button-primary'); ?>"
+                       id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
+            </div>
+        </form>
+    </center>
+    <div class="regulations" style="padding-top: 20px; margin-bottom: 20px">
+        <input id="tpay-accept-regulations-checkbox" type="checkbox" name="regulations" value="0">
+        <label for="tpay-accept-regulations-checkbox" id="regulations-label">
+            <?php $lang->l('accept') ?> <a href="<?php echo $data['regulation_url'] ?>"
+                                           target="_blank"><?php $lang->l('regulations_url') ?></a>
+            <?php $lang->l('regulations'); ?>
+        </label>
     </div>
-    <script>
-        function checkFields() {
-            var codeField = document.getElementById('blikCode'),
-                checkbox = document.getElementById('tpay-accept-regulations-checkbox'),
-                checkboxLabel = document.getElementById('regulations-label');
-            if (codeField.value.length === 6 && checkbox.checked) {
-                document.getElementById('tpay-payment').submit();
-            }
-            checkbox.checked ? checkboxLabel.style.color = "initial" : checkboxLabel.style.color = "red";
-            codeField.value.length === 6
-                ? codeField.style.borderColor = "initial" : codeField.style.borderColor = "red";
+</div>
+<script>
+    function checkFields() {
+        var codeField = document.getElementById('blikCode'),
+            checkbox = document.getElementById('tpay-accept-regulations-checkbox'),
+            checkboxLabel = document.getElementById('regulations-label');
+        if (codeField.value.length === 6 && checkbox.checked) {
+            document.getElementById('tpay-payment').submit();
         }
-    </script>
-<?php
+        checkbox.checked ? checkboxLabel.style.color = "initial" : checkboxLabel.style.color = "red";
+        codeField.value.length === 6
+            ? codeField.style.borderColor = "initial" : codeField.style.borderColor = "red";
+    }
+</script>

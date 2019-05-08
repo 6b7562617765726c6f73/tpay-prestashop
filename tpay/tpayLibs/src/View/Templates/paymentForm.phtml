@@ -6,25 +6,21 @@
 
 ?>
 <script type="text/javascript">
-    function redirectTpay() {
+    function redirect() {
         document.getElementById('tpay-payment').submit();
     }
 </script>
-<link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css?3"/>
+<link rel="stylesheet" type="text/css" href="<?php echo $data['static_files_url'] ?>View/Styles/style.css"/>
 <body <?php if ($data['redirect']) {
-    echo 'onload="redirectTpay()"';
+    echo 'onload="redirect()"';
 } ?>>
 <form id="tpay-payment" class="tpay-form" action="<?php echo $data['action_url'] ?>" method="POST"
-      accept-charset="UTF-8"
-    <?php if ($data['show_regulations_checkbox'] === true) { ?>
-        onsubmit="event.preventDefault(); checkFields()"
-    <?php } ?>
->
+      accept-charset="UTF-8">
     <?php foreach ($data['fields'] as $name => $value) { ?>
-        <input <?php if ($name === 'grupa') {
+        <input <?php if ($name === 'group') {
             echo ' id="tpay-channel-input" ';
         }
-        if ($name === 'akceptuje_regulamin') {
+        if ($name === 'accept_tos') {
             echo ' id="tpay-regulations-input" ';
         } ?> type="hidden"
              name="<?php echo $name ?>"
@@ -32,31 +28,10 @@
         <?php
     }
     ?>
-    <?php if ($data['showPayButton']) { ?>
-        <center>
-            <input class="<?php TPAY_PS_17 ? print_r('btn btn-primary') : print_r('tpay-pay-button-primary'); ?>
-                         " id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
-        </center>
-    <?php } ?>
+    <center>
+        <input class="<?php TPAY_PS_17 ? print_r('btn btn-primary') : print_r('tpay-pay-button-primary'); ?>"
+               style="width: 500px ; height:50px"
+               id="tpay-payment-submit" type="submit" value="<?php $lang->l('pay') ?>">
+    </center>
 </form>
-<?php if ($data['show_regulations_checkbox'] === true) { ?>
-    <div class="regulations" style="padding-top: 20px; margin-bottom: 20px">
-        <input id="tpay-accept-regulations-checkbox" type="checkbox" name="regulations" value="0">
-        <label for="tpay-accept-regulations-checkbox" id="regulations-label">
-            <?php $lang->l('accept') ?> <a href="<?php echo $data['regulation_url'] ?>"
-                                           target="_blank"><?php $lang->l('regulations_url') ?></a>
-            <?php $lang->l('regulations'); ?>
-        </label>
-    </div>
-<?php } ?>
-<script>
-    function checkFields() {
-        var checkbox = document.getElementById('tpay-accept-regulations-checkbox'),
-            checkboxLabel = document.getElementById('regulations-label');
-        if (checkbox.checked) {
-            document.getElementById('tpay-payment').submit();
-        }
-        checkbox.checked ? checkboxLabel.style.color = "initial" : checkboxLabel.style.color = "red";
-    }
-</script>
 </body>

@@ -38,7 +38,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         parent::initContent();
 
         $this->displayPrecision = (int)Configuration::get('PS_PRICE_DISPLAY_PRECISION');
-        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css?3');
+        $this->context->controller->addCss(_MODULE_DIR_ . 'tpay/views/css/style.css');
         $cart = $this->context->cart;
         $customer = new Customer($cart->id_customer);
         $paymentType = Tools::getValue('type');
@@ -146,7 +146,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $this->context->smarty->assign(array('showRegulations' => $showRegulations));
         $this->setTpayTemplate();
         if ($this->installments || $paymentViewType === TPAY_VIEW_REDIRECT) {
-            $form = $this->getRedirectionForm($showRegulations);
+            $form = $this->getRedirectionForm();
         } else {
             $form = $this->getBankForm($paymentViewType === TPAY_VIEW_LIST, $showRegulations);
         }
@@ -158,12 +158,14 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH . '/payment17.tpl') : $this->setTemplate('payment.tpl');
     }
 
-    private function getRedirectionForm($showRegulations)
+    private function getRedirectionForm()
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getTransactionForm([], false,
-            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS), true,
-            $showRegulations);
+        return $formProvider->getTransactionForm(
+            [],
+            false,
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS)
+        );
     }
 
     private function getBankForm($smallList = false, $regulations = true)
@@ -248,8 +250,12 @@ class TpayValidationModuleFrontController extends ModuleFrontController
             $language = 'en';
         }
         (new Util)->setLanguage($language)->setPath(__PS_BASE_URI__ . 'modules/tpay/tpayLibs/src/');
-        $form = $paymentCard->getOnSiteCardForm($this->context->link->getModuleLink('tpay',
-            'payment?type=' . TPAY_PAYMENT_CARDS), false);
+        $this->context->controller->addJS(_MODULE_DIR_ . 'tpay/tpayLibs/src/View/JS/jquery.payment.js');
+        $form = $paymentCard->getOnSiteCardForm(
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_CARDS),
+            false,
+            false
+        );
         $this->setTpayTemplate();
         $this->assignSmartyData($form, 'payment.tpl');
     }
@@ -264,8 +270,9 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private function getBlikForm()
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getBlikBasicForm($this->context->link->getModuleLink('tpay',
-            'payment?type=' . TPAY_PAYMENT_BASIC));
+        return $formProvider->getBlikBasicForm(
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_BASIC)
+        );
     }
 
     /**

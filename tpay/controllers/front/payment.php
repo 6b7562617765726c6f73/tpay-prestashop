@@ -104,7 +104,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         );
         $orderId = $this->module->currentOrder;
         Util::logLine(sprintf('OrderId %s', $orderId));
-        $this->tpayClientConfig['kwota'] = number_format(str_replace(array(',', ' '), array('.', ''),
+        $this->tpayClientConfig['amount'] = number_format(str_replace(array(',', ' '), array('.', ''),
             $orderTotal), 2, '.', '');
         $this->tpayClientConfig['crc'] = $crc_sum;
         $type = Tools::getValue('type');
@@ -134,37 +134,36 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $order = new Order($this->module->currentOrder);
         $reference = $order->reference;
         $this->tpayClientConfig += array(
-            'opis' => 'Zamówienie ' . $reference . '. Klient ' .
+            'description' => 'Zamówienie ' . $reference . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
-            'pow_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
+            'return_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
                 (int)$cart->id.'&id_module=' . (int)$this->module->id . '&id_order=' . $this->module->currentOrder .
                 '&key='.$customer->secure_key . '&status=success',
-            'pow_url_blad' => $this->context->link->getModuleLink('tpay', 'order-error').
+            'return_error_url' => $this->context->link->getModuleLink('tpay', 'order-error').
                 '?orderId='.$this->module->currentOrder,
             'email' => $this->context->cookie->email,
-            'imie' => $billingAddress->firstname,
-            'nazwisko' => $billingAddress->lastname,
-            'telefon' => $billingAddress->phone,
-            'adres' => $billingAddress->address1,
-            'miasto' => $billingAddress->city,
-            'kod' => $billingAddress->postcode,
-            'wyn_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
+            'name' => sprintf('%s %s', $billingAddress->firstname, $billingAddress->lastname),
+            'phone' => $billingAddress->phone,
+            'address' => $billingAddress->address1,
+            'city' => $billingAddress->city,
+            'zip' => $billingAddress->postcode,
+            'result_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
                 array('type' => TPAY_PAYMENT_BASIC)),
             'module' => 'prestashop ' . _PS_VERSION_,
         );
-        if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('akceptuje_regulamin') === 1
+        if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('accept_tos') === 1
             || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))
         ) {
-            $this->tpayClientConfig['akceptuje_regulamin'] = 1;
+            $this->tpayClientConfig['accept_tos'] = 1;
         }
         if (!empty(Configuration::get('TPAY_NOTIFICATION_EMAILS'))) {
-            $this->tpayClientConfig += array('wyn_email' => Configuration::get('TPAY_NOTIFICATION_EMAILS'));
+            $this->tpayClientConfig += array('result_email' => Configuration::get('TPAY_NOTIFICATION_EMAILS'));
         }
-        if ((int)Tools::getValue('grupa') > 0) {
-            $this->tpayClientConfig += array('grupa' => (int)Tools::getValue('grupa'));
+        if ((int)Tools::getValue('group') > 0) {
+            $this->tpayClientConfig += array('group' => (int)Tools::getValue('group'));
         }
         if ($installments) {
-            $this->tpayClientConfig['grupa'] = 109;
+            $this->tpayClientConfig['group'] = 109;
         }
         foreach ($this->tpayClientConfig as $key => $value) {
             if (empty($value)) {
@@ -179,7 +178,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $tpayCardClient = TpayHelperClient::getCardClient($this->midId);
 
         $cardData = Util::post('carddata', FieldsConfigDictionary::STRING);
-        $clientName = $this->tpayClientConfig['nazwisko'];
+        $clientName = $this->tpayClientConfig['name'];
         $clientEmail = $this->tpayClientConfig['email'];
         $saveCard = Util::post('card_save', FieldsConfigDictionary::STRING);
         Util::log('Secure Sale post params', print_r($_POST, true));
@@ -187,22 +186,22 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             $tpayCardClient->setOneTimer(false);
         }
 
-        $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])
+        $tpayCardClient->setAmount($this->tpayClientConfig['amount'])
             ->setCurrency($this->context->currency->iso_code_num)
             ->setOrderID($this->midId . '*tpay*' . $this->tpayClientConfig['crc']);
         $tpayCardClient->setLanguage($this->context->language->iso_code)
-            ->setReturnUrls($this->tpayClientConfig['pow_url'], $this->tpayClientConfig['pow_url_blad'])
+            ->setReturnUrls($this->tpayClientConfig['return_url'], $this->tpayClientConfig['return_url'])
             ->setModuleName('prestashop ' . _PS_VERSION_);
-        $response = $tpayCardClient->registerSale($clientName, $clientEmail, $this->tpayClientConfig['opis'],
+        $response = $tpayCardClient->registerSale($clientName, $clientEmail, $this->tpayClientConfig['description'],
             $cardData);
 
         if (isset($response['result']) && (int)$response['result'] === 1) {
-            $tpayCardClient->setAmount($this->tpayClientConfig['kwota'])->setOrderID('')
+            $tpayCardClient->setAmount($this->tpayClientConfig['amount'])->setOrderID('')
                 ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
                     $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
             $this->tpayPaymentId = $response['sale_auth'];
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, false);
-            Tools::redirect($this->tpayClientConfig['pow_url']);
+            Tools::redirect($this->tpayClientConfig['return_url']);
 
         } elseif (isset($response['3ds_url'])) {
             Tools::redirect($response['3ds_url']);
@@ -211,7 +210,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             if ((int)Configuration::get('TPAY_CARD_DEBUG') === 1) {
                 var_dump($response);
             } else {
-                Tools::redirect($this->tpayClientConfig['pow_url_blad']);
+                Tools::redirect($this->tpayClientConfig['return_error_url']);
             }
         }
     }
@@ -243,9 +242,9 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private function processBlikPayment($data)
     {
-        $data['grupa'] = 150;
-        $data['akceptuje_regulamin'] = 1;
-        $errorUrl = $data['pow_url_blad'];
+        $data['group'] = 150;
+        $data['accept_tos'] = 1;
+        $errorUrl = $data['return_error_url'];
         $tpayApiClient = TpayHelperClient::getApiClient();
         try {
             $resp = $tpayApiClient->create($data);
@@ -255,7 +254,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 $respBlik = $tpayApiClient->handleBlikPayment($blikData);
 
                 if ($respBlik) {
-                    Tools::redirect($data['pow_url']);
+                    Tools::redirect($data['return_url']);
                 } else {
                     Tools::redirect($resp['url']);
                 }
@@ -266,4 +265,5 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             Tools::redirect($errorUrl);
         }
     }
+
 }

@@ -196,12 +196,12 @@ class TpayModel extends ObjectModel
                             tj_surcharge,
                             tj_mid_id
                         ) VALUES (' .
-                            (int) $order_id.', '.
-                            '\''.pSQL($crc).'\', '.
-                            '\''.pSQL($type).'\', '.
-                            (int) $register_user.', '.
-                            (float) $surcharge.', '.
-                            (int) $midId.'
+            (int) $order_id.', '.
+            '\''.pSQL($crc).'\', '.
+            '\''.pSQL($type).'\', '.
+            (int) $register_user.', '.
+            (float) $surcharge.', '.
+            (int) $midId.'
                         )';
 
         return Db::getInstance()->execute($insert_sql);
