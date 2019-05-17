@@ -145,8 +145,10 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         $showRegulations = (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS');
         $this->context->smarty->assign(array('showRegulations' => $showRegulations));
         $this->setTpayTemplate();
-        if ($this->installments || $paymentViewType === TPAY_VIEW_REDIRECT) {
-            $form = $this->getRedirectionForm();
+        if ($this->installments) {
+            $form = $this->getRedirectionForm(TPAY_PAYMENT_INSTALLMENTS);
+        } elseif ($paymentViewType === TPAY_VIEW_REDIRECT) {
+            $form = $this->getRedirectionForm(TPAY_PAYMENT_BASIC);
         } else {
             $form = $this->getBankForm($paymentViewType === TPAY_VIEW_LIST, $showRegulations);
         }
@@ -158,13 +160,13 @@ class TpayValidationModuleFrontController extends ModuleFrontController
         TPAY_PS_17 ? $this->setTemplate(TPAY_17_PATH . '/payment17.tpl') : $this->setTemplate('payment.tpl');
     }
 
-    private function getRedirectionForm()
+    private function getRedirectionForm($paymentType)
     {
         $formProvider = TpayHelperClient::getBasicClient();
         return $formProvider->getTransactionForm(
             [],
             false,
-            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_INSTALLMENTS)
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . $paymentType)
         );
     }
 

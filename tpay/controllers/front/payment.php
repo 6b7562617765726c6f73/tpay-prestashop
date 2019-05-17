@@ -151,9 +151,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
                 array('type' => TPAY_PAYMENT_BASIC)),
             'module' => 'prestashop ' . _PS_VERSION_,
         );
-        if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('accept_tos') === 1
-            || ($installments && (bool)(int)Configuration::get('TPAY_SHOW_REGULATIONS'))
-        ) {
+        if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('accept_tos') === 1 || $installments) {
             $this->tpayClientConfig['accept_tos'] = 1;
         }
         if (!empty(Configuration::get('TPAY_NOTIFICATION_EMAILS'))) {
