@@ -29,8 +29,6 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
 {
     private $tpayClient = false;
 
-    private $paymentType = false;
-
     private $tpayPaymentId;
 
     /**
@@ -53,7 +51,6 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
         switch ($paymentType) {
             case TPAY_PAYMENT_INSTALLMENTS:
             case TPAY_PAYMENT_BASIC:
-                $this->paymentType = TPAY_PAYMENT_BASIC;
                 $this->initBasicClient();
                 $this->confirmPaymentBasic();
                 break;
@@ -80,7 +77,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
     private function confirmPaymentBasic()
     {
         try {
-            $orderRes = $this->tpayClient->checkPayment($this->paymentType);
+            $orderRes = $this->tpayClient->checkPayment();
             $this->tpayPaymentId = $orderRes['tr_id'];
             $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
             $orderId = (int)$orderData['tj_order_id'];
