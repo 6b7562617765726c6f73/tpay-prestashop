@@ -8,7 +8,7 @@ $cardPaymentConfig = array(
     'form' => array(
         'legend' => array(
             'title' => $this->l('Settings for card payments'),
-            'image' => $this->_path . 'views/img/logo.jpg',
+            'image' => $this->_path . 'views/img/logo.png',
         ),
         'input'  => array(
             array(

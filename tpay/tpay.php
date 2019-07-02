@@ -8,7 +8,7 @@
  *
  * You must not modify, adapt or create derivative works of this source code
  *
- * @author    tpay.com
+ * @author    Tpay
  * @copyright 2010-2019 tpay.com
  * @license   LICENSE.txt
  */
@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.6.5';
+        $this->version = '1.7.0';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -495,19 +495,20 @@ class Tpay extends PaymentModule
         $cardActive = (int)Configuration::get('TPAY_CARD_ACTIVE');
         $installmentsActive = (int)Configuration::get('TPAY_INSTALLMENTS_ACTIVE');
         if ($basicActive === 1 && $currency->iso_code === 'PLN') {
-            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_BASIC, 'Pay by online transfer with tpay.com');
+            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_BASIC,
+                $this->l('Pay by online transfer with Tpay'));
             if ($installmentsActive === 1 && $orderTotal >= 300 && $orderTotal <= 9259) {
                 $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_INSTALLMENTS,
-                    'Pay by installments with tpay');
+                    $this->l('Pay by installments with tpay'));
             }
         }
         if ($blikActive === 1 && $currency->iso_code === 'PLN') {
-            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_BLIK, 'Pay by BLIK code with tpay.com');
+            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_BLIK, $this->l('Pay by BLIK code with Tpay'));
         }
         if ($cardActive === 1 && TpayHelperClient::getCardMidNumber($currency->iso_code,
                 _PS_BASE_URL_ . __PS_BASE_URI__)
         ) {
-            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_CARDS, 'Pay by credit card with tpay.com');
+            $availablePayments[] = $this->getPaymentOption(TPAY_PAYMENT_CARDS, $this->l('Pay by credit card with Tpay'));
         }
 
         if ($returnPayments === true) {
@@ -540,8 +541,8 @@ class Tpay extends PaymentModule
         return array(
             'type' => $paymentType,
             'paymentLink' => $paymentLink,
-            'title' => $this->l($label),
-            'cta_text' => $this->l($label),
+            'title' => $label,
+            'cta_text' => $label,
             'logo' => _MODULE_DIR_ . 'tpay/views/img/logo.png',
             'action' => $this->context->link->getModuleLink(
                 $this->name,
@@ -609,23 +610,23 @@ class Tpay extends PaymentModule
         $availablePayments = array();
 
         if ($basicActive && $currency->iso_code === 'PLN') {
-            $paymentTitle = $this->l('Pay by online transfer with tpay.com');
+            $paymentTitle = $this->l('Pay by online transfer with Tpay');
             $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BASIC, $paymentTitle, $paymentLinkAction);
 
             if ($installmentsActive && $orderTotal >= 300 && $orderTotal <= 9259.25) {
-                $paymentTitle = $this->l('Pay by installments with tpay.com');
+                $paymentTitle = $this->l('Pay by installments with Tpay');
                 $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_INSTALLMENTS, $paymentTitle,
                     $paymentLinkAction);
             }
         }
         if ($blikActive && $currency->iso_code === 'PLN') {
-            $paymentTitle = $this->l('Pay by blik code with tpay.com');
+            $paymentTitle = $this->l('Pay by blik code with Tpay');
             $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_BLIK, $paymentTitle, $paymentLinkAction);
         }
         if ($cardActive && TpayHelperClient::getCardMidNumber($currency->iso_code,
                 _PS_BASE_URL_ . __PS_BASE_URI__)
         ) {
-            $paymentTitle = $this->l('Pay by credit card with tpay.com');
+            $paymentTitle = $this->l('Pay by credit card with Tpay');
             $availablePayments[] = $this->getPaymentData(TPAY_PAYMENT_CARDS, $paymentTitle, $paymentLinkAction);
         }
 
@@ -658,7 +659,7 @@ class Tpay extends PaymentModule
         }
         if (!$this->isCached('paymentlogo.tpl', $this->getCacheId())) {
             $this->smarty->assign(array(
-                'banner_img' => 'https://tpay.com/img/banners/tpay-160x75.png',
+                'banner_img' => 'https://tpay.com/img/banners/tpay-160x75.svg',
             ));
         }
 

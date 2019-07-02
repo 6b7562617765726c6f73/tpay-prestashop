@@ -6,7 +6,8 @@ function CardPayment(url, pubkey) {
         expiryInput = $('#expiry_date'),
         cvcInput = $('#cvc'),
         nameInput = $('#c_name'),
-        emailInput = $('#c_email');
+        emailInput = $('#c_email'),
+        termsOfServiceInput = $('#tpay-cards-accept-regulations-checkbox');
     const TRIGGER_EVENTS = 'input change blur';
 
     function SubmitPayment() {
@@ -28,11 +29,11 @@ function CardPayment(url, pubkey) {
     }
 
     function setWrong($elem) {
-        $elem.addClass('wrong');
+        $elem.addClass('wrong').removeClass('valid');
     }
 
     function setValid($elem) {
-        $elem.removeClass('wrong');
+        $elem.addClass('valid').removeClass('wrong');
     }
 
     function validateCcNumber($elem) {
@@ -41,9 +42,10 @@ function CardPayment(url, pubkey) {
             supported = ['mastercard', 'maestro', 'visa'],
             type = $.payment.cardType(ccNumber),
             notValidNote = $('#info_msg_not_valid'),
+            cardTypeHolder = $('.tpay-card-icon'),
             notSupportedNote = $('#info_msg_not_supported');
         $elem.val($.payment.formatCardNumber($elem.val()));
-        $('div.card_icon').removeClass('hover');
+        cardTypeHolder.attr('class', 'tpay-card-icon');
         if (supported.indexOf(type) < 0 && type !== null && ccNumber.length > 1) {
             showElem(notSupportedNote);
             hideElem(notValidNote);
@@ -63,7 +65,7 @@ function CardPayment(url, pubkey) {
             hideElem(notSupportedNote);
         }
         if (type !== '') {
-            $('#' + type).addClass('hover');
+            cardTypeHolder.addClass('tpay-' + type + '-icon');
         }
 
         return isValid;
@@ -143,6 +145,18 @@ function CardPayment(url, pubkey) {
         return true;
     }
 
+    function validateTos($elem) {
+        if ($elem.is(':checked')) {
+            setValid($elem);
+
+            return true;
+        } else {
+            setWrong($elem);
+
+            return false;
+        }
+    }
+
     function checkForm() {
         var isValidForm = false;
         if (
@@ -151,6 +165,7 @@ function CardPayment(url, pubkey) {
             && validateCvc(cvcInput)
             && checkName()
             && checkEmail()
+            && validateTos(termsOfServiceInput)
         ) {
             isValidForm = true;
         }
@@ -160,10 +175,10 @@ function CardPayment(url, pubkey) {
 
     $('#card_continue_btn').click(function () {
         var savedId = $('input[name=savedId]:checked').val();
-        if ((savedId === 'new' || !$('input[name=savedId]').length)  && checkForm()) {
+        if ((savedId === 'new' || !$('input[name=savedId]').length) && checkForm()) {
             SubmitPayment();
         }
-        if ($.isNumeric(savedId)) {
+        if ($.isNumeric(savedId) && validateTos(termsOfServiceInput)) {
             $('#saved_card_payment_form').submit();
         }
     });
@@ -181,6 +196,9 @@ function CardPayment(url, pubkey) {
     });
     emailInput.on(TRIGGER_EVENTS, function () {
         validateEmail($(this));
+    });
+    termsOfServiceInput.on(TRIGGER_EVENTS, function () {
+        validateTos($(this));
     });
 
 }

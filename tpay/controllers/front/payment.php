@@ -215,7 +215,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private function redirectToPayment()
     {
-        if (Tools::getValue('blikcode') && (is_int((int)(Tools::getValue('blikcode'))))) {
+        if (Tools::getValue('blik_code') && (is_int((int)(Tools::getValue('blik_code'))))) {
             $this->processBlikPayment($this->tpayClientConfig);
         } else {
             $tpayBasicClient = TpayHelperClient::getBasicClient();
@@ -247,7 +247,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         try {
             $resp = $tpayApiClient->create($data);
             if ((int)$resp['result'] === 1) {
-                $blikData['code'] = Tools::getValue('blikcode');
+                $blikData['code'] = Tools::getValue('blik_code');
                 $blikData['title'] = $resp['title'];
                 $respBlik = $tpayApiClient->handleBlikPayment($blikData);
 

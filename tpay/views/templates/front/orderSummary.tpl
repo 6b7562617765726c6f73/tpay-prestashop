@@ -139,7 +139,7 @@
                     </div>
                 </li>
             </ul>
-            <h4>{l s='tpay.com payment' mod='tpay'}</h4>
+            <h4>{l s='Tpay payment' mod='tpay'}</h4>
         </div>
     </div>
 {/if}

@@ -8,7 +8,7 @@ return array(
     'form' => array(
         'legend' => array(
             'title' => $this->l('Settings for BLIK payments and refunds'),
-            'image' => $this->_path . 'views/img/logo.jpg',
+            'image' => $this->_path . 'views/img/logo.png',
         ),
         'input'  => array(
             array(

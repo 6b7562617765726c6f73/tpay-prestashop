@@ -272,7 +272,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     private function getBlikForm()
     {
         $formProvider = TpayHelperClient::getBasicClient();
-        return $formProvider->getBlikBasicForm(
+        return $formProvider->getBlikSelectionForm(
             $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_BASIC)
         );
     }
