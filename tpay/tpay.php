@@ -762,7 +762,18 @@ class Tpay extends PaymentModule
         $order = new Order($orderId);
         $payments = $order->getOrderPayments();
         $currency = new Currency($order->id_currency);
-        if ($order->module !== 'tpay' || !empty($payments) || (int)$currency->iso_code_num !== 985) {
+        $ownStatusSetting = (int)Configuration::get('TPAY_OWN_STATUS') === 1;
+        if ($ownStatusSetting) {
+            $pendingOrderState = (int)Configuration::get('TPAY_OWN_WAITING');
+        } else {
+            $pendingOrderState = (int)Configuration::get('TPAY_NEW');
+        }
+        if (
+            $order->module !== 'tpay'
+            || !empty($payments)
+            || (int)$currency->iso_code_num !== 985
+            || (int)$order->getCurrentState() !== $pendingOrderState
+        ) {
             return;
         }
         $this->context->smarty->assign(array(
