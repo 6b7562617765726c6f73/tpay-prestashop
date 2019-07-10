@@ -673,8 +673,7 @@ class Tpay extends PaymentModule
         }
         $orderId = $params['id_order'];
         $order = new Order($orderId);
-        $payment = new OrderPayment();
-        $paymentTpay = $payment::getByOrderReference($order->reference);
+        $paymentTpay = $order->getOrderPayments();
         if (strcasecmp($order->payment, 'Tpay') === 0 && isset($paymentTpay[0])) {
             $maxRefundAmount = (float)$paymentTpay[0]->amount;
             $refundAmount = Tools::getValue('tpay_refund_amount');

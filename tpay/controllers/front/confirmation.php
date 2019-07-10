@@ -92,21 +92,8 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
             die();
         } catch (Exception $e) {
-            Util::log('exception in payment confirmation', $e->getMessage());
-            $log = array(
-                'e'     => $e,
-                'post'  => $_POST,
-                'order' => isset($orderData) ? $orderData : array(),
-            );
+            $this->handleException($e);
 
-            $debug_on = (bool)(int)Configuration::get('TPAY_DEBUG');
-
-            if ($debug_on) {
-                echo '<pre>';
-                var_dump($log);
-                echo '</pre>';
-                die();
-            }
             return false;
         }
     }
@@ -157,23 +144,28 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId);
             die();
         } catch (Exception $e) {
-            Util::log('exception in payment confirmation', $e->getMessage());
-            $log = array(
-                'e'     => $e,
-                'post'  => $_POST,
-                'order' => isset($orderData) ? $orderData : array(),
-            );
-
-            $debug_on = (bool)(int)Configuration::get('TPAY_CARD_DEBUG');
-
-            if ($debug_on) {
-                echo '<pre>';
-                var_dump($log);
-                echo '</pre>';
-                die;
-            }
+            $this->handleException($e);
 
             return false;
+        }
+    }
+
+    /**
+     * @param Exception $e
+     */
+    private function handleException($e)
+    {
+        Util::log('exception in payment confirmation', $e->getMessage());
+        $log = array(
+            'e'     => $e->getMessage(),
+            'post'  => $_POST,
+        );
+        $debug_on = (bool)(int)Configuration::get('TPAY_CARD_DEBUG');
+        if ($debug_on) {
+            echo '<pre>';
+            var_dump($log);
+            echo '</pre>';
+            die;
         }
     }
 

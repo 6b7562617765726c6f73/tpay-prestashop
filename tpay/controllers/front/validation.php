@@ -26,7 +26,6 @@ require_once _PS_MODULE_DIR_ . 'tpay/helpers/TpayHelperClient.php';
 class TpayValidationModuleFrontController extends ModuleFrontController
 {
     public $ssl = true;
-    private $tpayClientConfig = array();
     private $paymentType = false;
     private $installments = false;
     private $displayPrecision;
@@ -280,24 +279,14 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     /**
      * Handles order exceptions.
      *
-     * @param $exception
+     * @param Exception $exception
      */
     private function handleException($exception)
     {
-        $this->context->cookie->last_order = false;
-        $this->context->cookie->__unset('last_order');
         $debug_on = (bool)(int)Configuration::get('TPAY_DEBUG');
-
-        /**
-         * prepare error message.
-         */
-        $msg = 'config array ' . nl2br(print_r($this->tpayClientConfig, true)) . "\n";
-        $msg .= 'exception ' . nl2br(print_r($exception, true)) . "\n";
-
         if ($debug_on) {
             echo '<pre>';
-            print_r($msg);
-            print_r(debug_backtrace());
+            var_dump($exception->getMessage());
             echo '</pre>';
             die();
         }

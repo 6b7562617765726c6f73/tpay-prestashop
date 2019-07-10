@@ -1,5 +1,4 @@
 <?php
-use tpayLibs\src\_class_tpay\Utilities\Util;
 
 /**
  * Created by tpay.com.
@@ -20,9 +19,9 @@ class TpayOrderStatusHandler extends Helper
         $order = new Order($orderId);
         $reference = $order->reference;
         $referencedOrders = Order::getByReference($reference)->getResults();
-        foreach ($referencedOrders as $key => $orderObject) {
+        foreach ($referencedOrders as $orderObject) {
             if (!is_null($orderObject->id)) {
-                $this->setOrderAsConfirmed((int)$orderObject->id, $tpayPaymentId, $error);
+                $this->setOrderAsConfirmed($orderObject, $tpayPaymentId, $error);
             }
         }
     }
@@ -30,30 +29,27 @@ class TpayOrderStatusHandler extends Helper
     /**
      * Update order status.
      *
-     * @param int $orderId
+     * @param Order $order
      * @param string $tpayPaymentId
      * @param bool $error change to error status flag
      */
-    private function setOrderAsConfirmed($orderId, $tpayPaymentId, $error = false)
+    private function setOrderAsConfirmed($order, $tpayPaymentId, $error = false)
     {
         $orderHistory = new OrderHistory();
-        $order = new Order($orderId);
         $ownStatusSetting = (int)Configuration::get('TPAY_OWN_STATUS') === 1;
         if ($ownStatusSetting) {
             $targetOrderState = !$error ? Configuration::get('TPAY_OWN_PAID') : Configuration::get('TPAY_OWN_ERROR');
         } else {
             $targetOrderState = !$error ? Configuration::get('TPAY_CONFIRMED') : Configuration::get('TPAY_ERROR');
         }
-        $orderStatusesHistory = TpayModel::getOrderStatusHistory($orderId);
+        $orderStatusesHistory = TpayModel::getOrderStatusHistory($order->id);
         if (!in_array($targetOrderState, $orderStatusesHistory)) {
-            $orderHistory->id_order = $orderId;
-            $orderHistory->changeIdOrderState($targetOrderState, $orderId);
-            $orderHistory->addWithemail(true);
             if (!$error) {
-                $payments = $order->getOrderPaymentCollection();
-                $payments[0]->transaction_id = $tpayPaymentId;
-                $payments[0]->update();
+                $order->addOrderPayment($order->getOrdersTotalPaid(), 'Tpay', $tpayPaymentId);
             }
+            $orderHistory->id_order = $order->id;
+            $orderHistory->changeIdOrderState($targetOrderState, $order->id, true);
+            $orderHistory->addWithemail(true);
         }
     }
 

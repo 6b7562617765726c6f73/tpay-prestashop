@@ -25,9 +25,10 @@ class TpayBasicExample extends PaymentBasicForms
      * @param array $config transaction config
      * @param bool $redirect redirect automatically
      * @param string $actionURL
+     * @param bool $showRegulations
      * @return string
      */
-    public function getTransactionForm($config = [], $redirect = false, $actionURL = null) {
+    public function getTransactionForm($config = [], $redirect = false, $actionURL = null, $showRegulations = false) {
         if (!empty($config)) {
             $config = $this->prepareConfig($config);
         }
@@ -35,6 +36,8 @@ class TpayBasicExample extends PaymentBasicForms
             static::ACTION_URL => is_null($actionURL) ? $this->panelURL : (string)$actionURL,
             static::FIELDS => $config,
             'redirect' => $redirect,
+            'show_regulations_checkbox' => $showRegulations,
+            'regulation_url' => static::TPAY_TERMS_OF_SERVICE_URL,
         ];
 
         return Util::parseTemplate(static::PAYMENT_FORM, $data);

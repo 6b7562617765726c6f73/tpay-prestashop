@@ -223,7 +223,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             if ($language !== 'pl') {
                 $language = 'en';
             }
-            (new Util)->setLanguage($language);
+            (new Util)->setLanguage($language)->setPath(_MODULE_DIR_ . 'tpay/tpayLibs/src/');
             if (TPAY_PS_17) {
                 $this->setTemplate(TPAY_17_PATH . '/redirect.tpl');
                 echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true);

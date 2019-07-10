@@ -14,7 +14,7 @@
 
 <div id="tpay-success">
     <img src="{$modulesDir|escape:'htmlall':'UTF-8'}tpay/views/img/tpay_logo.png" alt="{l s='tpay logo' mod='tpay'}"
-         width="213" height="51"/><br/><br/>
+         width="118" height="39"/><br/><br/>
     <h4>{l s='Thank you for your order and we invite you to further ' mod='tpay'} <a
             href="{$homeLink}">{l s='shopping' mod='tpay'}</a>.</h4>
     {if $TPAY_PS_17 === true}
