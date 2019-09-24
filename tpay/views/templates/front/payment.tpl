@@ -19,12 +19,3 @@
         <i class="icon-chevron-left"></i>{l s='Other payment methods' mod='tpay'}
     </a>
 </p>
-<script type="text/javascript">
-    document.ready = function () {
-        if ($('#uniform-tpay-accept-regulations-checkbox').length && $("#uniform-tpay-accept-regulations-checkbox").hasClass("checker")) {
-            var checkbox = $('#uniform-tpay-accept-regulations-checkbox');
-            checkbox.removeClass("checker");
-            $('#regulations-label').appendTo(checkbox);
-        }
-    }
-</script>
