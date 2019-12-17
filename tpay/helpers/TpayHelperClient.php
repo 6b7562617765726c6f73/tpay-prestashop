@@ -194,25 +194,25 @@ class TpayHelperClient extends Helper
      *
      * @param float $orderTotal order value
      *
-     * @return bool|float false if surcharge is off
+     * @return float
      */
     public static function getSurchargeValue($orderTotal)
     {
-        $surcharge = false;
-
-        $surchargeActive = (int)Configuration::get('TPAY_SURCHARGE_ACTIVE');
-        if ($surchargeActive === 1) {
-            $surchargeType = (int)Configuration::get('TPAY_SURCHARGE_TYPE');
-            $surchargeValue = (float)Configuration::get('TPAY_SURCHARGE_VALUE');
-
-            if ($surchargeType === TPAY_SURCHARGE_PERCENT) {
-                $surcharge = ($orderTotal / 100) * $surchargeValue;
-            } else {
-                $surcharge = $surchargeValue;
-            }
+        if ((int)Configuration::get('TPAY_SURCHARGE_ACTIVE') !== 1) {
+            return 0.00;
         }
+        $surchargeValue = (float)Configuration::get('TPAY_SURCHARGE_VALUE');
+        if ((int)Configuration::get('TPAY_SURCHARGE_TYPE') === TPAY_SURCHARGE_PERCENT) {
+            $surcharge = ($orderTotal / 100) * $surchargeValue;
+        } else {
+            $surcharge = $surchargeValue;
+        }
+        $feeProduct = new Product(TpayHelperClient::getTpayFeeProductId(), true);
+        $feeProduct->price = $surcharge;
+        $feeProduct->save();
+        $feeProduct->flushPriceCache();
 
-        return $surcharge;
+        return $feeProduct->getPrice(true, null, 2);
     }
 
     public static function getTpayFeeProductId()

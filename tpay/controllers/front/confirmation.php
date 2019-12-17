@@ -81,15 +81,18 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             $this->tpayPaymentId = $orderRes['tr_id'];
             $orderData = TpayModel::getOrderIdAndSurcharge($orderRes['tr_crc']);
             $orderId = (int)$orderData['tj_order_id'];
-
             if ($orderId === 0) {
-                return false;
+                throw new Exception('No order exist in Tpay table for the specified crc');
             }
             $order = new Order($orderId);
-            $orderTotal = (float)number_format($order->getOrdersTotalPaid(), 2, '.', '');
-            $orderTotal === (float)number_format($orderRes['tr_paid'], 2, '.', '') ?
-                $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId) :
+            $orderTotal = number_format($order->getOrdersTotalPaid(), 2, '.', '');
+            $transactionPaid = number_format($orderRes['tr_paid'], 2, '.', '');
+            if ($orderTotal === $transactionPaid && $orderRes['tr_status'] === 'TRUE') {
+                $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId);
+            }
+            if ($orderTotal !== $transactionPaid && $orderRes['tr_status'] !== 'CHARGEBACK') {
                 $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
+            }
             die();
         } catch (Exception $e) {
             $this->handleException($e);
@@ -160,8 +163,7 @@ class TpayConfirmationModuleFrontController extends ModuleFrontController
             'e'     => $e->getMessage(),
             'post'  => $_POST,
         );
-        $debug_on = (bool)(int)Configuration::get('TPAY_CARD_DEBUG');
-        if ($debug_on) {
+        if ((bool)(int)Configuration::get('TPAY_DEBUG')) {
             echo '<pre>';
             var_dump($log);
             echo '</pre>';

@@ -45,85 +45,90 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     {
         $this->display_column_left = false;
         parent::initContent();
-
         $this->statusHandler = new TpayOrderStatusHandler();
+        /** @var CartCore $cart */
         $cart = $this->context->cart;
         if (empty($cart->id)) {
-            exit('Cart Id is empty!');
+            Tools::redirect('index.php?controller=order&step=1');
         }
-        $currency = $this->context->currency;
+        if ($cart->orderExists() === true) {
+            die($this->trans('Cart cannot be loaded or an order has already been placed using this cart', [],
+                'Admin.Payment.Notification'));
+        }
         $customer = new Customer($cart->id_customer);
         if (!Validate::isLoadedObject($customer)) {
             Tools::redirect('index.php?controller=order&step=1');
         }
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
-        $crc_sum = md5($cart->id . $this->context->cookie->mail . $customer->secure_key . time());
         $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
-        if (is_float($surcharge)) {
-            $feeProductId = TpayHelperClient::getTpayFeeProductId();
-            $feeProduct = new Product($feeProductId, true);
-            $feeProduct->price = $surcharge;
-            $saveResult = $feeProduct->save();
-            Util::logLine(sprintf('CartId %s', $cart->id));
-            Util::logLine(sprintf('Calculated surcharge value %s. Saving Tpay fee price result %s',
-                $surcharge, $saveResult));
-            $feeProduct->flushPriceCache();
-            if (!$cart->containsProduct($feeProductId)) {
-                Util::logLine('Cart does not contain fee product.');
-                $updateQtyResult = $cart->updateQty(1, $feeProductId);
-                $updateCartResult = $cart->update();
-                Util::logLine(sprintf('Update qty result %s', $updateQtyResult));
-                Util::logLine(sprintf('Update cart result %s', $updateCartResult));
-                $cart->getPackageList(true);
-                $orderTotal += $surcharge;
-            } else {
-                Util::logLine('Cart already contain fee product.');
-            }
+        if ($surcharge > 0) {
+            $this->addFeeProductToCart($cart);
+        }
+        $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
+        try {
+            $this->insertPsOrder($orderTotal, $customer->secure_key);
+            $this->context->smarty->assign(['nbProducts' => $cart->nbProducts()]);
+            $this->processPayment($cart, $customer, $orderTotal, $surcharge);
+
+            return true;
+        } catch (Exception $e) {
+            $this->handleException($e);
+
+            return false;
+        }
+    }
+
+    private function processPayment($cart, $customer, $orderTotal, $surcharge)
+    {
+        $orderId = $this->module->currentOrder;
+        Util::logLine(sprintf('OrderId %s', $orderId));
+        $this->tpayClientConfig['amount'] = number_format(str_replace([',', ' '], ['.', ''], $orderTotal), 2, '.', '');
+        $crc = md5($cart->id . $this->context->cookie->mail . $customer->secure_key . time());
+        $this->tpayClientConfig['crc'] = $crc;
+        $type = Tools::getValue('type');
+        $isInstallment = $type === TPAY_PAYMENT_INSTALLMENTS;
+        $paymentType = $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
+        $this->midId = TpayHelperClient::getCardMidNumber(
+            $this->context->currency->iso_code,
+            _PS_BASE_URL_ . __PS_BASE_URI__
+        );
+        TpayModel::insertOrder($orderId, $crc, $paymentType, false, $surcharge, $this->midId);
+        $this->initBasicClient($isInstallment, $cart, $customer);
+        $this->context->cookie->last_order = $orderId;
+        unset($this->context->cookie->id_cart);
+        if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
+            $this->processCardPayment($orderId);
+        } elseif (Tools::getValue('type') === TPAY_PAYMENT_BLIK && is_numeric(Tools::getValue('blik_code'))) {
+            $this->processBlikPayment();
         } else {
-            Util::logLine(sprintf('No surcharge for this order. Surcharge value: %s', $surcharge));
-            $surcharge = 0.0;
+            $this->redirectToPayment();
         }
-        if ($cart->OrderExists() === true) {
-            die($this->trans('Cart cannot be loaded or an order has already been placed using this cart', array(),
-                'Admin.Payment.Notification'));
+    }
+
+    private function addFeeProductToCart($cart)
+    {
+        $feeProductId = TpayHelperClient::getTpayFeeProductId();
+        if (!$cart->containsProduct($feeProductId)) {
+            $cart->updateQty(1, $feeProductId);
+            $cart->update();
+            $cart->getPackageList(true);
         }
-        $this->context->smarty->assign(array(
-            'nbProducts' => $cart->nbProducts(),
-        ));
+    }
+
+    private function insertPsOrder($orderTotal, $customerSecureKey)
+    {
         $this->module->validateOrder(
-            (int)$cart->id,
+            (int)$this->context->cart->id,
             (int)Configuration::get('TPAY_OWN_STATUS') === 1 ?
                 Configuration::get('TPAY_OWN_WAITING') : Configuration::get('TPAY_NEW'),
             $orderTotal,
             $this->module->displayName,
             null,
-            array(),
-            (int)$currency->id,
+            [],
+            (int)$this->context->currency->id,
             false,
-            $customer->secure_key
+            $customerSecureKey
         );
-        $orderId = $this->module->currentOrder;
-        Util::logLine(sprintf('OrderId %s', $orderId));
-        $this->tpayClientConfig['amount'] = number_format(str_replace(array(',', ' '), array('.', ''),
-            $orderTotal), 2, '.', '');
-        $this->tpayClientConfig['crc'] = $crc_sum;
-        $type = Tools::getValue('type');
-        $installments = $type === TPAY_PAYMENT_INSTALLMENTS;
-        $paymentType = $installments || $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
-        /*
-         * Insert order to db
-         */
-        $this->midId = TpayHelperClient::getCardMidNumber($this->context->currency->iso_code,
-            _PS_BASE_URL_ . __PS_BASE_URI__);
-        TpayModel::insertOrder($orderId, $crc_sum, $paymentType, false, $surcharge, $this->midId);
-        $this->initBasicClient($installments, $cart, $customer);
-        $this->context->cookie->last_order = $orderId;
-        unset($this->context->cookie->id_cart);
-        if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
-            $this->processCardPayment($orderId);
-        } else {
-            $this->redirectToPayment();
-        }
     }
 
     private function initBasicClient($installments, $cart, $customer)
@@ -133,7 +138,7 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $billingAddress = new AddressCore($addressInvoiceId);
         $order = new Order($this->module->currentOrder);
         $reference = $order->reference;
-        $this->tpayClientConfig += array(
+        $this->tpayClientConfig += [
             'description' => 'Zamówienie ' . $reference . '. Klient ' .
                 $this->context->cookie->customer_firstname . ' ' . $this->context->cookie->customer_lastname,
             'return_url'      => $baseUrl . 'index.php?controller=order-confirmation&id_cart=' .
@@ -147,18 +152,17 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             'address' => $billingAddress->address1,
             'city' => $billingAddress->city,
             'zip' => $billingAddress->postcode,
-            'result_url' => $this->context->link->getModuleLink('tpay', 'confirmation',
-                array('type' => TPAY_PAYMENT_BASIC)),
+            'result_url' => $this->context->link->getModuleLink('tpay', 'confirmation', ['type' => TPAY_PAYMENT_BASIC]),
             'module' => 'prestashop ' . _PS_VERSION_,
-        );
+        ];
         if ((int)Tools::getValue('regulations') === 1 || (int)Tools::getValue('accept_tos') === 1 || $installments) {
             $this->tpayClientConfig['accept_tos'] = 1;
         }
         if (!empty(Configuration::get('TPAY_NOTIFICATION_EMAILS'))) {
-            $this->tpayClientConfig += array('result_email' => Configuration::get('TPAY_NOTIFICATION_EMAILS'));
+            $this->tpayClientConfig += ['result_email' => Configuration::get('TPAY_NOTIFICATION_EMAILS')];
         }
         if ((int)Tools::getValue('group') > 0) {
-            $this->tpayClientConfig += array('group' => (int)Tools::getValue('group'));
+            $this->tpayClientConfig += ['group' => (int)Tools::getValue('group')];
         }
         if ($installments) {
             $this->tpayClientConfig['group'] = 109;
@@ -174,7 +178,6 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
     private function processCardPayment($orderId)
     {
         $tpayCardClient = TpayHelperClient::getCardClient($this->midId);
-
         $cardData = Util::post('carddata', FieldsConfigDictionary::STRING);
         $clientName = $this->tpayClientConfig['name'];
         $clientEmail = $this->tpayClientConfig['email'];
@@ -183,29 +186,43 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         if ($saveCard === 'on') {
             $tpayCardClient->setOneTimer(false);
         }
-
         $tpayCardClient->setAmount($this->tpayClientConfig['amount'])
             ->setCurrency($this->context->currency->iso_code_num)
             ->setOrderID($this->midId . '*tpay*' . $this->tpayClientConfig['crc']);
         $tpayCardClient->setLanguage($this->context->language->iso_code)
             ->setReturnUrls($this->tpayClientConfig['return_url'], $this->tpayClientConfig['return_url'])
             ->setModuleName('prestashop ' . _PS_VERSION_);
-        $response = $tpayCardClient->registerSale($clientName, $clientEmail, $this->tpayClientConfig['description'],
-            $cardData);
-
-        if (isset($response['result']) && (int)$response['result'] === 1) {
-            $tpayCardClient->setAmount($this->tpayClientConfig['amount'])->setOrderID('')
-                ->validateCardSign($response['sign'], $response['sale_auth'], $response['card'],
-                    $response['date'], 'correct', isset($response['test_mode']) ? '1' : '', '', '');
+        $response = $tpayCardClient->registerSale(
+            $clientName,
+            $clientEmail,
+            $this->tpayClientConfig['description'],
+            $cardData
+        );
+        if (isset($response['result'], $response['status'])
+            && (int)$response['result'] === 1
+            && $response['status'] === 'correct'
+        ) {
+            $tpayCardClient
+                ->setAmount($this->tpayClientConfig['amount'])
+                ->setOrderID('')
+                ->validateCardSign(
+                    $response['sign'],
+                    $response['sale_auth'],
+                    $response['card'],
+                    $response['date'],
+                    'correct',
+                    isset($response['test_mode']) ? '1' : '',
+                    '',
+                    ''
+                );
             $this->tpayPaymentId = $response['sale_auth'];
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, false);
             Tools::redirect($this->tpayClientConfig['return_url']);
-
         } elseif (isset($response['3ds_url'])) {
             Tools::redirect($response['3ds_url']);
         } else {
             $this->statusHandler->setOrdersAsConfirmed($orderId, $this->tpayPaymentId, true);
-            if ((int)Configuration::get('TPAY_CARD_DEBUG') === 1) {
+            if ((int)Configuration::get('TPAY_DEBUG') === 1) {
                 var_dump($response);
             } else {
                 Tools::redirect($this->tpayClientConfig['return_error_url']);
@@ -215,31 +232,28 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
 
     private function redirectToPayment()
     {
-        if (Tools::getValue('blik_code') && (is_int((int)(Tools::getValue('blik_code'))))) {
-            $this->processBlikPayment($this->tpayClientConfig);
+        $tpayBasicClient = TpayHelperClient::getBasicClient();
+        $language = $this->context->language->iso_code;
+        if ($language !== 'pl') {
+            $language = 'en';
+        }
+        (new Util)->setLanguage($language)->setPath(_MODULE_DIR_.'tpay/tpayLibs/src/');
+        if (TPAY_PS_17) {
+            $this->setTemplate(TPAY_17_PATH.'/redirect.tpl');
+            echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true);
         } else {
-            $tpayBasicClient = TpayHelperClient::getBasicClient();
-            $language = $this->context->language->iso_code;
-            if ($language !== 'pl') {
-                $language = 'en';
-            }
-            (new Util)->setLanguage($language)->setPath(_MODULE_DIR_ . 'tpay/tpayLibs/src/');
-            if (TPAY_PS_17) {
-                $this->setTemplate(TPAY_17_PATH . '/redirect.tpl');
-                echo $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true);
-            } else {
-                $this->setTemplate('tpayRedirect.tpl');
-                $this->context->smarty->assign(array(
-                    'tpay_form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
-                    'tpay_path' => _MODULE_DIR_ . 'tpay/views',
-                    'HOOK_HEADER' => Hook::exec('displayHeader'),
-                ));
-            }
+            $this->setTemplate('tpayRedirect.tpl');
+            $this->context->smarty->assign([
+                'tpay_form' => $tpayBasicClient->getTransactionForm($this->tpayClientConfig, true),
+                'tpay_path' => _MODULE_DIR_.'tpay/views',
+                'HOOK_HEADER' => Hook::exec('displayHeader'),
+            ]);
         }
     }
 
-    private function processBlikPayment($data)
+    private function processBlikPayment()
     {
+        $data = $this->tpayClientConfig;
         $data['group'] = 150;
         $data['accept_tos'] = 1;
         $errorUrl = $data['return_error_url'];
@@ -261,6 +275,24 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
             }
         } catch (TException $e) {
             Tools::redirect($errorUrl);
+        }
+    }
+
+    /**
+     * @param Exception $e
+     */
+    private function handleException($e)
+    {
+        Util::log('exception in payment confirmation', $e->getMessage());
+        $log = [
+            'e'     => $e->getMessage(),
+            'post'  => $_POST,
+        ];
+        if ((bool)(int)Configuration::get('TPAY_DEBUG')) {
+            echo '<pre>';
+            var_dump($log);
+            echo '</pre>';
+            die;
         }
     }
 

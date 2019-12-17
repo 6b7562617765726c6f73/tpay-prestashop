@@ -33,26 +33,6 @@ $cardPaymentConfig = array(
                     'module/tpay/confirmation </b>',
             ),
             array(
-                'type'    => $switch,
-                'label'   => $this->l('Debug mode'),
-                'name'    => 'TPAY_CARD_DEBUG',
-                'is_bool' => true,
-                'class'   => 't',
-                'values'  => array(
-                    array(
-                        'id'    => 'tpay_debug_on',
-                        'value' => 1,
-                        'label' => $this->l('Yes'),
-                    ),
-                    array(
-                        'id'    => 'tpay_debug_off',
-                        'value' => 0,
-                        'label' => $this->l('No'),
-                    ),
-                ),
-                'desc'    => '<b>' . $this->l('WARNING') . '</b>' . $this->l(' turn off in production mode'),
-            ),
-            array(
                 'type'     => 'select',
                 'label'    => $this->l('MID config number:'),
                 'name'     => 'TPAY_CARD_MID_NB',

@@ -51,7 +51,7 @@ class Tpay extends PaymentModule
     {
         $this->name = 'tpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.7.0';
+        $this->version = '1.7.1';
         $this->author = 'Krajowy Integrator Płatności S.A.';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.7');
@@ -304,7 +304,6 @@ class Tpay extends PaymentModule
              * debug option.
              */
             $this->setValue('TPAY_DEBUG', (int)Tools::getValue('TPAY_DEBUG'));
-            $this->setValue('TPAY_CARD_DEBUG', (int)Tools::getValue('TPAY_CARD_DEBUG'));
             /**
              * Notifications options.
              */
@@ -368,7 +367,7 @@ class Tpay extends PaymentModule
             }
             $output .= $this->displayConfirmation($this->l('Settings saved'));
         }
-        $output .= TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/admin/configuration.tpl') :
+        $output .= TPAY_PS_17 ? $this->fetch('module:tpay/views/templates/front/configuration.tpl') :
             $this->display(__FILE__, 'configuration.tpl');
 
         return $output . $this->displayForm();
@@ -582,7 +581,7 @@ class Tpay extends PaymentModule
             $cart = $this->context->cart;
             $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
             $surcharge = TpayHelperClient::getSurchargeValue($orderTotal);
-            (!empty($surcharge)) ? $this->smarty->assign('surcharge',
+            $surcharge > 0 ? $this->smarty->assign('surcharge',
                 number_format($surcharge, 2)) : $this->smarty->assign('surcharge', false);
             $newOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
             $newOption->setModuleName($this->name)

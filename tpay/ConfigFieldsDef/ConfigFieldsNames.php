@@ -33,7 +33,6 @@ class ConfigFieldsNames
             'TPAY_OWN_WAITING',
             'TPAY_INSTALLMENTS_ACTIVE',
             'TPAY_CARD_ACTIVE',
-            'TPAY_CARD_DEBUG',
             'TPAY_CARD_MID_NB',
         );
     }

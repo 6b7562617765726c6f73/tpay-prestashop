@@ -272,7 +272,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
     {
         $formProvider = TpayHelperClient::getBasicClient();
         return $formProvider->getBlikSelectionForm(
-            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_BASIC)
+            $this->context->link->getModuleLink('tpay', 'payment?type=' . TPAY_PAYMENT_BLIK)
         );
     }
 
@@ -283,8 +283,7 @@ class TpayValidationModuleFrontController extends ModuleFrontController
      */
     private function handleException($exception)
     {
-        $debug_on = (bool)(int)Configuration::get('TPAY_DEBUG');
-        if ($debug_on) {
+        if ((bool)(int)Configuration::get('TPAY_DEBUG')) {
             echo '<pre>';
             var_dump($exception->getMessage());
             echo '</pre>';
