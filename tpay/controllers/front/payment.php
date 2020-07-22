@@ -87,18 +87,22 @@ class TpayPaymentModuleFrontController extends ModuleFrontController
         $this->tpayClientConfig['crc'] = $crc;
         $type = Tools::getValue('type');
         $isInstallment = $type === TPAY_PAYMENT_INSTALLMENTS;
-        $paymentType = $type === TPAY_PAYMENT_BASIC ? 'basic' : 'card';
         $this->midId = TpayHelperClient::getCardMidNumber(
             $this->context->currency->iso_code,
             _PS_BASE_URL_ . __PS_BASE_URI__
         );
+        if (in_array($type, [TPAY_PAYMENT_BASIC, TPAY_PAYMENT_BLIK, TPAY_PAYMENT_INSTALLMENTS], false)) {
+            $paymentType = 'basic';
+        } else {
+            $paymentType = 'card';
+        }
         TpayModel::insertOrder($orderId, $crc, $paymentType, false, $surcharge, $this->midId);
         $this->initBasicClient($isInstallment, $cart, $customer);
         $this->context->cookie->last_order = $orderId;
         unset($this->context->cookie->id_cart);
-        if (Tools::getValue('type') === TPAY_PAYMENT_CARDS) {
+        if ($type === TPAY_PAYMENT_CARDS) {
             $this->processCardPayment($orderId);
-        } elseif (Tools::getValue('type') === TPAY_PAYMENT_BLIK && is_numeric(Tools::getValue('blik_code'))) {
+        } elseif ($type === TPAY_PAYMENT_BLIK && is_numeric(Tools::getValue('blik_code'))) {
             $this->processBlikPayment();
         } else {
             $this->redirectToPayment();
