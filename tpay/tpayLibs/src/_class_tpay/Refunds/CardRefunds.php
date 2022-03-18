@@ -35,11 +35,21 @@ class CardRefunds extends CardApi
 
         $this->setMethod(CardDictionary::REFUND);
         $params[CardDictionary::METHOD] = CardDictionary::REFUND;
-        if (!empty($this->clientAuthCode)) {
+
+        if(!empty($this->clientAuthCode)){
             $params[CardDictionary::CLIAUTH] = $this->clientAuthCode;
-        } else {
+        }
+        else {
+            $params[CardDictionary::CLIAUTH] = '';
+        }
+
+        if($saleAuthCode){
             $params[CardDictionary::SALE_AUTH] = $saleAuthCode;
         }
+        else {
+            $params[CardDictionary::SALE_AUTH] = '';
+        }
+
         $params[CardDictionary::DESC] = $refundDesc;
         if (!empty($this->amount)) {
             $params[CardDictionary::AMOUNT] = $this->amount;
@@ -47,6 +57,11 @@ class CardRefunds extends CardApi
         $params[CardDictionary::CURRENCY] = $this->currency;
         $params[CardDictionary::LANGUAGE] = $this->lang;
         $params[CardDictionary::SIGN] = hash($this->cardHashAlg, implode('&', $params) .'&'. $this->cardVerificationCode);
+        foreach ($params as $paramKey => $paramsValue){
+            if($paramsValue === '') {
+                unset($params[$paramKey]);
+            }
+        }
         $params[CardDictionary::APIPASS] = $this->cardApiPass;
         Util::log('Card refund', print_r($params, true));
         $result = $this->requests($this->cardsApiURL . $this->cardApiKey, $params);
